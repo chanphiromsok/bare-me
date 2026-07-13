@@ -8,26 +8,26 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 
 ### Coverage
 
-| Area | Result | Notes |
-| --- | --- | --- |
-| Authentication | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled. |
-| Dashboard | Failed | Date, pending-order count, sales total, and staff greeting are hard-coded. Recent activity can show empty while orders exist. |
-| Dashboard navigation | Failed | `View all` can reopen a retained order detail and leave the Orders tab stuck on that detail. |
-| New order | Passed | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288. |
-| Order list and filters | Partial | Draft and Pending filters work; order/customer search does not filter the list. |
-| Order details | Partial | Customer, items, payment, and timeline render, but staff cannot confirm, cancel, pay, fulfill, or return an order. |
-| Product list | Partial | API data and search work. Product rows have a disclosure arrow but do not open product or variant details. |
-| Restock | Passed | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9. |
-| Add product | Needs follow-up | Required-field validation works. Completing every field reliably could not be verified because focus moved inconsistently between form inputs during device QA. |
-| Customer list | Partial | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view. |
-| More | Failed | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded. |
-| Static checks | Failed | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`. |
-| Phoenix API | Passed baseline | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests. |
+| Area                   | Result                | Notes                                                                                                                                                           |
+| ---------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication         | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled.            |
+| Dashboard              | Passed after STAFF-02 | Date and greeting use the current device time and stored staff profile. Pending orders, today's fulfilled sales, and recent activity come from the API.         |
+| Dashboard navigation   | Failed                | `View all` can reopen a retained order detail and leave the Orders tab stuck on that detail.                                                                    |
+| New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                             |
+| Order list and filters | Partial               | Draft and Pending filters work; order/customer search does not filter the list.                                                                                 |
+| Order details          | Partial               | Customer, items, payment, and timeline render, but staff cannot confirm, cancel, pay, fulfill, or return an order.                                              |
+| Product list           | Partial               | API data and search work. Product rows have a disclosure arrow but do not open product or variant details.                                                      |
+| Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                        |
+| Add product            | Needs follow-up       | Required-field validation works. Completing every field reliably could not be verified because focus moved inconsistently between form inputs during device QA. |
+| Customer list          | Partial               | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view.                                   |
+| More                   | Failed                | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded.                      |
+| Static checks          | Failed                | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`.                                                       |
+| Phoenix API            | Passed baseline       | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests.                                            |
 
 ### Confirmed Tasks
 
 - [x] **STAFF-01 — Fix sign-in form/autofill synchronization.** The apparent `staff@example.com` value was the placeholder while React Hook Form correctly held an empty string. The field now says `Enter your email`, while `autoComplete` and `textContentType` continue to synchronize genuine native autofill through `onChangeText`.
-- [ ] **STAFF-02 — Make dashboard data live.** Derive the date and greeting at runtime and load pending-order, daily-sales, and recent-activity values from the API.
+- [x] **STAFF-02 — Make dashboard data live.** Date and greeting are derived at render time, the staff name comes from MMKV, and one TanStack Query dashboard request supplies pending orders, today's fulfilled sales, and recent activity.
 - [ ] **STAFF-03 — Reset Orders navigation correctly.** Dashboard `View all` must always open the order list; selecting a recent activity must open only that order and allow returning to the list.
 - [ ] **STAFF-04 — Implement order search.** Filter by order number and customer name without breaking status filters.
 - [ ] **STAFF-05 — Add staff order workflow actions.** Expose only valid confirm, cancel, payment, fulfillment, and return actions for the current backend state.
