@@ -1,12 +1,12 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import AppIcon from "../components/icons/AppIcon";
-import CustomersScreen from "../screens/customers/CustomersScreen";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import MoreScreen from "../screens/more/MoreScreen";
 import { colors } from "../theme";
 import OrdersStack from "./ordersStack";
 import ProductsStack from "./productsStack";
+import CustomersStack from "./customersStack";
 
 const OperationTabs = createBottomTabNavigator({
   screenOptions: {
@@ -55,8 +55,9 @@ const OperationTabs = createBottomTabNavigator({
       },
     },
     Customers: {
-      screen: CustomersScreen,
+      screen: CustomersStack,
       options: {
+        popToTopOnBlur: true,
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="self-service" color={color} size={size} />
         ),
