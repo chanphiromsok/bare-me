@@ -10,7 +10,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 
 | Area | Result | Notes |
 | --- | --- | --- |
-| Authentication | Failed | Sign-out works, but the visually autofilled email is not synchronized with the form value, so the next sign-in submits an empty email. |
+| Authentication | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled. |
 | Dashboard | Failed | Date, pending-order count, sales total, and staff greeting are hard-coded. Recent activity can show empty while orders exist. |
 | Dashboard navigation | Failed | `View all` can reopen a retained order detail and leave the Orders tab stuck on that detail. |
 | New order | Passed | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288. |
@@ -26,7 +26,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 
 ### Confirmed Tasks
 
-- [ ] **STAFF-01 — Fix sign-in form/autofill synchronization.** A displayed email must be the value submitted by React Hook Form, including after sign-out and app relaunch.
+- [x] **STAFF-01 — Fix sign-in form/autofill synchronization.** The apparent `staff@example.com` value was the placeholder while React Hook Form correctly held an empty string. The field now says `Enter your email`, while `autoComplete` and `textContentType` continue to synchronize genuine native autofill through `onChangeText`.
 - [ ] **STAFF-02 — Make dashboard data live.** Derive the date and greeting at runtime and load pending-order, daily-sales, and recent-activity values from the API.
 - [ ] **STAFF-03 — Reset Orders navigation correctly.** Dashboard `View all` must always open the order list; selecting a recent activity must open only that order and allow returning to the list.
 - [ ] **STAFF-04 — Implement order search.** Filter by order number and customer name without breaking status filters.

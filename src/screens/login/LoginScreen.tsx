@@ -60,7 +60,7 @@ export default function LoginScreen() {
             keyboardType="email-address"
             label="Email"
             name="email"
-            placeholder="staff@example.com"
+            placeholder="Enter your email"
             textContentType="emailAddress"
           />
           <TextController
