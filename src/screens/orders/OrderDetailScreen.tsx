@@ -7,8 +7,9 @@ import {
   useRoute,
   type RouteProp,
 } from "@react-navigation/native";
-import { Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 
+import { useOrderWorkflowMutations } from "../../api/orders/mutations";
 import {
   type OrderDetail,
   useOrderDetailQuery,
@@ -75,11 +76,75 @@ function ItemCard({ item }: LegendListRenderItemProps<DetailItem>) {
   );
 }
 
+function ActionButton({
+  disabled,
+  label,
+  onPress,
+  tone = "primary",
+}: {
+  disabled: boolean;
+  label: string;
+  onPress: () => void;
+  tone?: "danger" | "primary";
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className={`min-h-12 items-center justify-center rounded-xl px-4 ${
+        tone === "danger" ? "border border-danger" : "bg-primary"
+      } ${disabled ? "opacity-50" : "active:opacity-80"}`}
+      disabled={disabled}
+      onPress={onPress}
+    >
+      <Text
+        className={
+          tone === "danger"
+            ? "text-sm font-bold text-danger"
+            : "text-sm font-bold text-on-primary"
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export default function OrderDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<DetailRoute>();
   const orderQuery = useOrderDetailQuery(route.params.orderId);
+  const workflow = useOrderWorkflowMutations(route.params.orderId);
   const order = orderQuery.data;
+  const workflowPending =
+    workflow.cancel.isPending ||
+    workflow.fulfill.isPending ||
+    workflow.recordPayment.isPending ||
+    workflow.submit.isPending;
+  const workflowError =
+    workflow.cancel.isError ||
+    workflow.fulfill.isError ||
+    workflow.recordPayment.isError ||
+    workflow.submit.isError;
+  const paidCents =
+    order?.payments
+      .filter((payment) => !payment.voided)
+      .reduce((total, payment) => total + payment.amountCents, 0) ?? 0;
+  const balanceCents = Math.max((order?.totalCents ?? 0) - paidCents, 0);
+
+  const confirmCancel = () => {
+    Alert.alert(
+      "Cancel this order?",
+      "Committed stock will be restored. This action cannot be undone.",
+      [
+        { style: "cancel", text: "Keep order" },
+        {
+          onPress: () => workflow.cancel.mutate("Cancelled by staff"),
+          style: "destructive",
+          text: "Cancel order",
+        },
+      ],
+    );
+  };
 
   return (
     <View className="flex-1 bg-background">
@@ -189,6 +254,52 @@ export default function OrderDetailScreen() {
                   </Text>
                 ) : null}
               </View>
+              {order.status === "draft" || order.status === "pending" ? (
+                <View className="rounded-2xl border border-border bg-surface p-4">
+                  <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+                    Staff actions
+                  </Text>
+                  <View className="mt-4 gap-3">
+                    {order.status === "draft" ? (
+                      <ActionButton
+                        disabled={workflowPending}
+                        label="Confirm order"
+                        onPress={() => workflow.submit.mutate()}
+                      />
+                    ) : null}
+                    {order.status === "pending" && balanceCents > 0 ? (
+                      <ActionButton
+                        disabled={workflowPending}
+                        label={`Record cash payment · ${formatCurrency(balanceCents)}`}
+                        onPress={() =>
+                          workflow.recordPayment.mutate(balanceCents)
+                        }
+                      />
+                    ) : null}
+                    {order.status === "pending" && balanceCents === 0 ? (
+                      <ActionButton
+                        disabled={workflowPending}
+                        label="Fulfill order"
+                        onPress={() => workflow.fulfill.mutate()}
+                      />
+                    ) : null}
+                    <ActionButton
+                      disabled={workflowPending}
+                      label="Cancel order"
+                      onPress={confirmCancel}
+                      tone="danger"
+                    />
+                    {workflowError ? (
+                      <Text
+                        accessibilityRole="alert"
+                        className="text-sm text-danger"
+                      >
+                        The order could not be updated. Refresh and try again.
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
             </View>
           ) : null
         }
