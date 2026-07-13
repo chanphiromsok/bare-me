@@ -20,7 +20,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 | Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                                |
 | Add product            | Passed after STAFF-07 | Required-field validation and creation work. Example-like placeholders are clearly labeled so empty inputs no longer look populated; native field focus was reverified. |
 | Customer list          | Passed after STAFF-08 | API data, search, validation, and customer creation work. Customer rows open contact, approval, and API-backed order history details.                                   |
-| More                   | Failed                | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded.                              |
+| More                   | Passed after STAFF-09 | Sign out works. Destinations without implemented workflows are visibly unavailable, are not interactive, and no longer display fabricated counts or disclosure arrows.  |
 | Static checks          | Failed                | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`.                                                               |
 | Phoenix API            | Passed baseline       | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests.                                                    |
 
@@ -34,7 +34,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 - [x] **STAFF-06 — Add product and variant details.** Products now use a nested stack and API-backed detail query; each row opens the product description and its SKU, size, color, price, active state, and stock per variant.
 - [x] **STAFF-07 — Verify and harden Add Product input focus.** Native field discovery confirmed that focus and values remain isolated. The apparent populated fields were example placeholders, now prefixed with `e.g.` or replaced by explicit prompts.
 - [x] **STAFF-08 — Add customer profile/history details.** Customers use a nested stack; each row opens contact information, confirmation state, and order history with links to order details.
-- [ ] **STAFF-09 — Implement or clearly disable More destinations.** Remove deceptive disclosure affordances until inventory movements, approvals, settings, staff management, and support routes work; replace the hard-coded approval count with API data.
+- [x] **STAFF-09 — Implement or clearly disable More destinations.** Unimplemented destinations are non-interactive and labeled unavailable; fabricated approval counts and misleading disclosure affordances were removed.
 - [ ] **STAFF-10 — Restore a clean TypeScript check.** Remove obsolete Petstore example hooks and fix the `ExploreScreen` and `HomeBanner` errors.
 - [ ] **STAFF-11 — Design returns and refunds.** The backend currently forbids cancelling fulfilled orders and has no return/refund resource. Define partial/full return, stock disposition, and refund rules before exposing this irreversible workflow.
 

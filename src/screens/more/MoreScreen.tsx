@@ -21,35 +21,35 @@ const sections: MoreItem[] = [
   {
     icon: "parcel",
     title: "Inventory movements",
-    detail: "Restocks, adjustments, and sales",
+    detail: "Coming soon",
   },
   {
     icon: "notification",
     title: "Customer approvals",
-    detail: "3 registrations need review",
+    detail: "Coming soon",
   },
   {
     icon: "self-service",
     title: "Staff management",
-    detail: "Admin-only access",
+    detail: "Unavailable for staff",
   },
   {
     icon: "setting",
     title: "Settings",
-    detail: "Language, theme, and preferences",
+    detail: "Coming soon",
   },
   {
     icon: "help-and-support",
     title: "Help and support",
-    detail: "Guides and contact options",
+    detail: "Coming soon",
   },
 ];
 
 function MoreRow({ item }: LegendListRenderItemProps<MoreItem>) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      className="min-h-16 flex-row items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 active:bg-surface-muted"
+    <View
+      accessibilityLabel={`${item.title}, ${item.detail}`}
+      className="min-h-16 flex-row items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 opacity-70"
     >
       <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary-soft">
         <AppIcon name={item.icon} color={colors.primary} size={20} />
@@ -60,8 +60,10 @@ function MoreRow({ item }: LegendListRenderItemProps<MoreItem>) {
         </Text>
         <Text className="mt-0.5 text-xs text-muted">{item.detail}</Text>
       </View>
-      <AppIcon name="arrow-range" color={colors.iconMuted} size={17} />
-    </Pressable>
+      <Text className="rounded-full bg-surface-muted px-2 py-1 text-[10px] font-bold uppercase tracking-[0.5px] text-subtle">
+        Unavailable
+      </Text>
+    </View>
   );
 }
 
@@ -117,7 +119,6 @@ export default function MoreScreen() {
                 {user?.role ?? "staff"}
               </Text>
             </View>
-            <AppIcon name="arrow-range" color={colors.iconMuted} size={18} />
           </View>
         }
         maintainVisibleContentPosition
