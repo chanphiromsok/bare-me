@@ -44,12 +44,6 @@ const HomeBanner = () => {
         parallaxScrollingOffset: ADJACENT_BANNER_PEEK,
         parallaxScrollingScale: 1,
       }}
-      // Claim only clearly-horizontal drags so the vertical list scroll
-      // still works when the drag starts on the banner.
-      onConfigurePanGesture={(gesture) => {
-        "worklet";
-        gesture.activeOffsetX([-10, 10]).failOffsetY([-8, 8]);
-      }}
       renderItem={renderItem}
     />
   );
