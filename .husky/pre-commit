@@ -1,0 +1,20 @@
+if ! yarn lint-staged; then
+  echo ""
+  echo "Pre-commit failed: lint-staged encountered an error."
+  echo "Fix the issues above and try committing again."
+  exit 1
+fi
+
+if ! yarn extract; then
+  echo ""
+  echo "Pre-commit failed: Lingui extraction encountered an error."
+  echo "Fix the issue above and try committing again."
+  exit 1
+fi
+
+if ! git diff --exit-code -- '*.po'; then
+  echo ""
+  echo "Pre-commit failed: Translation files (.po) have uncommitted changes."
+  echo "Run 'yarn extract' and stage the updated .po files before committing."
+  exit 1
+fi
