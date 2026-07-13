@@ -4,13 +4,8 @@ import {
   type ParamListBase,
 } from "@react-navigation/native";
 import { useForm } from "react-hook-form";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-} from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { getApiErrorMessage } from "../../api/errorMessage";
 import { useCreateProductMutation } from "../../api/operations/mutations";
@@ -68,17 +63,16 @@ export default function NewProductScreen() {
   });
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 bg-background"
-    >
+    <View className="flex-1 bg-background">
       <TaskHeader
         onBack={() => navigation.goBack()}
         subtitle="Create a product with its first sellable variant."
         title="Add product"
       />
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={24}
         contentContainerClassName="gap-5 p-5 pb-safe-offset-8"
+        keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
         <TextController
@@ -86,7 +80,7 @@ export default function NewProductScreen() {
           control={control}
           label="Product name"
           name="name"
-          placeholder="Classic Cotton Tee"
+          placeholder="Enter product name"
           rules={{ required: "Product name is required" }}
         />
         <TextController
@@ -94,14 +88,14 @@ export default function NewProductScreen() {
           control={control}
           label="Category (optional)"
           name="category"
-          placeholder="Tops"
+          placeholder="e.g. Tops"
         />
         <TextController
           control={control}
           label="Description (optional)"
           multiline
           name="description"
-          placeholder="A short product description"
+          placeholder="Describe this product"
         />
         <Text className="pt-2 text-base font-bold text-foreground">
           First variant
@@ -111,7 +105,7 @@ export default function NewProductScreen() {
           control={control}
           label="SKU"
           name="sku"
-          placeholder="CCT-8T-NAVY"
+          placeholder="e.g. CCT-8T-NAVY"
           rules={{ required: "SKU is required" }}
         />
         <TextController
@@ -119,7 +113,7 @@ export default function NewProductScreen() {
           control={control}
           label="Size"
           name="size"
-          placeholder="8T"
+          placeholder="e.g. 8T"
           rules={{ required: "Size is required" }}
         />
         <TextController
@@ -127,7 +121,7 @@ export default function NewProductScreen() {
           control={control}
           label="Color"
           name="color"
-          placeholder="Navy"
+          placeholder="e.g. Navy"
           rules={{ required: "Color is required" }}
         />
         <TextController
@@ -135,7 +129,7 @@ export default function NewProductScreen() {
           keyboardType="decimal-pad"
           label="Price (USD)"
           name="price"
-          placeholder="18.00"
+          placeholder="0.00"
           rules={{
             required: "Price is required",
             validate: (value) =>
@@ -179,7 +173,7 @@ export default function NewProductScreen() {
             {createProduct.isPending ? "Creating product…" : "Create product"}
           </Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }

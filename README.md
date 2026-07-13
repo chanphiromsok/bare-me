@@ -8,21 +8,21 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 
 ### Coverage
 
-| Area                   | Result                | Notes                                                                                                                                                           |
-| ---------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication         | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled.            |
-| Dashboard              | Passed after STAFF-02 | Date and greeting use the current device time and stored staff profile. Pending orders, today's fulfilled sales, and recent activity come from the API.         |
-| Dashboard navigation   | Passed after STAFF-03 | `View all` targets the order list, activity deep links preserve a list back path, and leaving Orders clears retained detail state.                              |
-| New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                             |
-| Order list and filters | Passed after STAFF-04 | Status filters compose with a controlled order-number/customer-name search.                                                                                     |
-| Order details          | Passed after STAFF-05 | Customer, items, payment, timeline, and state-valid confirm, cancel, cash-payment, and fulfillment actions work. Returns remain a separate domain task.         |
-| Product list           | Passed after STAFF-06 | API data and search work. Product rows open a variant view with SKU, size, color, price, active state, and current stock.                                       |
-| Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                        |
-| Add product            | Needs follow-up       | Required-field validation works. Completing every field reliably could not be verified because focus moved inconsistently between form inputs during device QA. |
-| Customer list          | Partial               | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view.                                   |
-| More                   | Failed                | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded.                      |
-| Static checks          | Failed                | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`.                                                       |
-| Phoenix API            | Passed baseline       | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests.                                            |
+| Area                   | Result                | Notes                                                                                                                                                                   |
+| ---------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication         | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled.                    |
+| Dashboard              | Passed after STAFF-02 | Date and greeting use the current device time and stored staff profile. Pending orders, today's fulfilled sales, and recent activity come from the API.                 |
+| Dashboard navigation   | Passed after STAFF-03 | `View all` targets the order list, activity deep links preserve a list back path, and leaving Orders clears retained detail state.                                      |
+| New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                                     |
+| Order list and filters | Passed after STAFF-04 | Status filters compose with a controlled order-number/customer-name search.                                                                                             |
+| Order details          | Passed after STAFF-05 | Customer, items, payment, timeline, and state-valid confirm, cancel, cash-payment, and fulfillment actions work. Returns remain a separate domain task.                 |
+| Product list           | Passed after STAFF-06 | API data and search work. Product rows open a variant view with SKU, size, color, price, active state, and current stock.                                               |
+| Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                                |
+| Add product            | Passed after STAFF-07 | Required-field validation and creation work. Example-like placeholders are clearly labeled so empty inputs no longer look populated; native field focus was reverified. |
+| Customer list          | Partial               | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view.                                           |
+| More                   | Failed                | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded.                              |
+| Static checks          | Failed                | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`.                                                               |
+| Phoenix API            | Passed baseline       | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests.                                                    |
 
 ### Confirmed Tasks
 
@@ -32,7 +32,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 - [x] **STAFF-04 — Implement order search.** The controlled search now filters the API-backed list by order number or customer name after applying the selected Jotai status filter.
 - [x] **STAFF-05 — Add staff order workflow actions.** Draft orders can be confirmed or cancelled; pending orders can be paid, fulfilled after full payment, or cancelled. Mutations refresh all operation queries.
 - [x] **STAFF-06 — Add product and variant details.** Products now use a nested stack and API-backed detail query; each row opens the product description and its SKU, size, color, price, active state, and stock per variant.
-- [ ] **STAFF-07 — Verify and harden Add Product input focus.** Each labeled field must retain its own value while moving through the form with the keyboard open.
+- [x] **STAFF-07 — Verify and harden Add Product input focus.** Native field discovery confirmed that focus and values remain isolated. The apparent populated fields were example placeholders, now prefixed with `e.g.` or replaced by explicit prompts.
 - [ ] **STAFF-08 — Add customer profile/history details.** Customer rows must open contact information and order history.
 - [ ] **STAFF-09 — Implement or clearly disable More destinations.** Remove deceptive disclosure affordances until inventory movements, approvals, settings, staff management, and support routes work; replace the hard-coded approval count with API data.
 - [ ] **STAFF-10 — Restore a clean TypeScript check.** Remove obsolete Petstore example hooks and fix the `ExploreScreen` and `HomeBanner` errors.
