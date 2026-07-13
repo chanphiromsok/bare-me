@@ -5,6 +5,7 @@ import {
 import { useAtom } from "jotai";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import AppIcon from "../../components/icons/AppIcon";
@@ -15,8 +16,11 @@ import {
   orderFilterAtom,
   type OrderFilter,
 } from "../../features/operations/filters";
-import { type Order, useOrdersQuery } from "../../features/operations/queries";
-import { colors } from "../../theme";
+import {
+  type Order,
+  useOrderListQuery,
+} from "../../features/operations/orderListQuery";
+import { colors } from "../../theme/colors";
 import type { OrdersStackParamList } from "../../navigation/ordersStack";
 
 type OrdersNavigation = NativeStackNavigationProp<
@@ -29,13 +33,20 @@ const filters: { label: string; value: OrderFilter }[] = [
   { label: "Draft", value: "draft" },
   { label: "Pending", value: "pending" },
   { label: "Fulfilled", value: "fulfilled" },
+  { label: "Cancelled", value: "cancelled" },
 ];
 
-function OrderCard({ item: order }: LegendListRenderItemProps<Order>) {
+type OrderCardProps = LegendListRenderItemProps<Order> & {
+  onPress: (orderId: string) => void;
+};
+
+function OrderCard({ item: order, onPress }: OrderCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={`Open order ${order.number}`}
       className="rounded-2xl border border-border bg-surface p-4 active:bg-surface-muted"
+      onPress={() => onPress(order.id)}
     >
       <View className="flex-row items-center justify-between gap-3">
         <View className="flex-row items-center gap-3">
@@ -67,7 +78,18 @@ function OrderCard({ item: order }: LegendListRenderItemProps<Order>) {
 export default function OrdersScreen() {
   const navigation = useNavigation<OrdersNavigation>();
   const [filter, setFilter] = useAtom(orderFilterAtom);
-  const ordersQuery = useOrdersQuery(filter);
+  const [search, setSearch] = useState("");
+  const ordersQuery = useOrderListQuery(filter);
+  const orders = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return ordersQuery.data ?? [];
+
+    return (ordersQuery.data ?? []).filter(
+      (order) =>
+        order.number.toLowerCase().includes(term) ||
+        order.customer.toLowerCase().includes(term),
+    );
+  }, [ordersQuery.data, search]);
 
   const emptyState = ordersQuery.isPending ? (
     <View className="rounded-2xl border border-border bg-surface p-6">
@@ -92,7 +114,7 @@ export default function OrdersScreen() {
   ) : (
     <View className="rounded-2xl border border-border bg-surface p-6">
       <Text className="text-center text-sm text-muted">
-        No orders match this filter.
+        No orders match this filter or search.
       </Text>
     </View>
   );
@@ -105,14 +127,19 @@ export default function OrdersScreen() {
       />
       <LegendList
         contentContainerStyle={{ paddingBottom: 112, paddingHorizontal: 20 }}
-        data={ordersQuery.data ?? []}
+        data={orders}
         estimatedItemSize={124}
+        extraData={search}
         ItemSeparatorComponent={() => <View className="h-3" />}
         keyExtractor={(order) => order.number}
         ListEmptyComponent={emptyState}
         ListHeaderComponent={
           <View className="mb-4 gap-4">
-            <SearchField placeholder="Search order or customer" />
+            <SearchField
+              onChangeText={setSearch}
+              placeholder="Search order or customer"
+              value={search}
+            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row gap-2">
                 {filters.map((item) => {
@@ -145,9 +172,15 @@ export default function OrdersScreen() {
             </ScrollView>
           </View>
         }
-        maintainVisibleContentPosition
         recycleItems
-        renderItem={(props) => <OrderCard {...props} />}
+        renderItem={(props) => (
+          <OrderCard
+            {...props}
+            onPress={(orderId) =>
+              navigation.navigate("OrderDetail", { orderId })
+            }
+          />
+        )}
         showsVerticalScrollIndicator={false}
       />
       <Pressable
