@@ -1,18 +1,23 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import AppIcon from "../components/icons/AppIcon";
+import CustomersScreen from "../screens/customers/CustomersScreen";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
-import PlaceholderScreen from "../screens/PlaceholderScreen";
+import MoreScreen from "../screens/more/MoreScreen";
+import ProductsScreen from "../screens/products/ProductsScreen";
 import { colors } from "../theme";
+import OrdersStack from "./ordersStack";
 
 const OperationTabs = createBottomTabNavigator({
   screenOptions: {
     headerShown: false,
     tabBarActiveTintColor: colors.tabActive,
     tabBarInactiveTintColor: colors.tabInactive,
+    tabBarHideOnKeyboard: true,
     tabBarLabelStyle: {
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 11,
+      fontWeight: "600",
+      lineHeight: 15,
     },
     tabBarStyle: {
       backgroundColor: colors.surface,
@@ -23,7 +28,7 @@ const OperationTabs = createBottomTabNavigator({
     },
   },
   screens: {
-    Dashboard: {
+    Home: {
       screen: DashboardScreen,
       options: {
         tabBarIcon: ({ color, size }) => (
@@ -31,27 +36,35 @@ const OperationTabs = createBottomTabNavigator({
         ),
       },
     },
-    Operation: {
-      screen: () => <PlaceholderScreen title="Operation" />,
+    Orders: {
+      screen: OrdersStack,
       options: {
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="operation" color={color} size={size} />
         ),
       },
     },
-    Notifications: {
-      screen: () => <PlaceholderScreen title="Notifications" />,
+    Products: {
+      screen: ProductsScreen,
       options: {
         tabBarIcon: ({ color, size }) => (
-          <AppIcon name="notification" color={color} size={size} />
+          <AppIcon name="parcel" color={color} size={size} />
         ),
       },
     },
-    Account: {
-      screen: () => <PlaceholderScreen title="Account" />,
+    Customers: {
+      screen: CustomersScreen,
       options: {
         tabBarIcon: ({ color, size }) => (
-          <AppIcon name="profile" color={color} size={size} />
+          <AppIcon name="self-service" color={color} size={size} />
+        ),
+      },
+    },
+    More: {
+      screen: MoreScreen,
+      options: {
+        tabBarIcon: ({ color, size }) => (
+          <AppIcon name="filter-lines" color={color} size={size} />
         ),
       },
     },

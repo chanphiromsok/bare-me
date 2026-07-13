@@ -1,26 +1,33 @@
 import { createStaticNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import type { ComponentProps } from "react";
 
+import { initializeApiClient } from "../api/configureClient";
 import LoginScreen from "../screens/login/LoginScreen";
+import { useAuthUser } from "../storage/authUserStore";
 import OperationTabs from "./operationTabs";
-import Tabs from "./tabs";
+
+function useIsSignedIn() {
+  const [user] = useAuthUser();
+
+  return Boolean(user);
+}
+
+function useIsSignedOut() {
+  return !useIsSignedIn();
+}
 
 const RootStack = createNativeStackNavigator({
-  initialRouteName: "OperationTabs",
   screens: {
-    Tabs: {
-      screen: Tabs,
-      options: {
-        headerShown: false,
-      },
-    },
     OperationTabs: {
+      if: useIsSignedIn,
       screen: OperationTabs,
       options: {
         headerShown: false,
       },
     },
     Login: {
+      if: useIsSignedOut,
       screen: LoginScreen,
       options: {
         headerShown: false,
@@ -29,6 +36,15 @@ const RootStack = createNativeStackNavigator({
   },
 });
 
-const Navigation = createStaticNavigation(RootStack);
+const StaticNavigation = createStaticNavigation(RootStack);
 
-export default Navigation;
+type NavigationProps = ComponentProps<typeof StaticNavigation>;
+
+export default function Navigation({ onReady, ...props }: NavigationProps) {
+  const handleReady = () => {
+    onReady?.();
+    void initializeApiClient();
+  };
+
+  return <StaticNavigation {...props} onReady={handleReady} />;
+}

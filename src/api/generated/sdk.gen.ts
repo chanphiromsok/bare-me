@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddPetData, AddPetErrors, AddPetResponses, CreateUserData, CreateUserErrors, CreateUserResponses, CreateUsersWithListInputData, CreateUsersWithListInputErrors, CreateUsersWithListInputResponses, DeleteOrderData, DeleteOrderErrors, DeleteOrderResponses, DeletePetData, DeletePetErrors, DeletePetResponses, DeleteUserData, DeleteUserErrors, DeleteUserResponses, FindPetsByStatusData, FindPetsByStatusErrors, FindPetsByStatusResponses, FindPetsByTagsData, FindPetsByTagsErrors, FindPetsByTagsResponses, GetInventoryData, GetInventoryErrors, GetInventoryResponses, GetOrderByIdData, GetOrderByIdErrors, GetOrderByIdResponses, GetPetByIdData, GetPetByIdErrors, GetPetByIdResponses, GetUserByNameData, GetUserByNameErrors, GetUserByNameResponses, LoginUserData, LoginUserErrors, LoginUserResponses, LogoutUserData, LogoutUserErrors, LogoutUserResponses, PlaceOrderData, PlaceOrderErrors, PlaceOrderResponses, UpdatePetData, UpdatePetErrors, UpdatePetResponses, UpdatePetWithFormData, UpdatePetWithFormErrors, UpdatePetWithFormResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UploadFileData, UploadFileErrors, UploadFileResponses } from './types.gen';
+import type { DeleteApiOrdersByOrderIdLineItemsByIdData, DeleteApiOrdersByOrderIdLineItemsByIdErrors, DeleteApiOrdersByOrderIdLineItemsByIdResponses, GetApiCustomersData, GetApiCustomersErrors, GetApiCustomersResponses, GetApiOrdersByIdData, GetApiOrdersByIdErrors, GetApiOrdersByIdResponses, GetApiOrdersData, GetApiOrdersErrors, GetApiOrdersResponses, GetApiProductsByIdData, GetApiProductsByIdErrors, GetApiProductsByIdResponses, GetApiProductsData, GetApiProductsErrors, GetApiProductsResponses, GetApiProductVariantsByIdData, GetApiProductVariantsByIdErrors, GetApiProductVariantsByIdResponses, GetApiProductVariantsByProductVariantIdStockMovementsData, GetApiProductVariantsByProductVariantIdStockMovementsErrors, GetApiProductVariantsByProductVariantIdStockMovementsResponses, GetApiProductVariantsData, GetApiProductVariantsErrors, GetApiProductVariantsResponses, PatchApiCustomersByIdConfirmData, PatchApiCustomersByIdConfirmErrors, PatchApiCustomersByIdConfirmResponses, PatchApiOrdersByIdCancelData, PatchApiOrdersByIdCancelErrors, PatchApiOrdersByIdCancelResponses, PatchApiOrdersByIdDiscountData, PatchApiOrdersByIdDiscountErrors, PatchApiOrdersByIdDiscountResponses, PatchApiOrdersByIdFulfillData, PatchApiOrdersByIdFulfillErrors, PatchApiOrdersByIdFulfillResponses, PatchApiOrdersByIdSubmitData, PatchApiOrdersByIdSubmitErrors, PatchApiOrdersByIdSubmitResponses, PatchApiOrdersByOrderIdLineItemsByIdData, PatchApiOrdersByOrderIdLineItemsByIdErrors, PatchApiOrdersByOrderIdLineItemsByIdResponses, PatchApiPaymentsByIdVoidData, PatchApiPaymentsByIdVoidErrors, PatchApiPaymentsByIdVoidResponses, PatchApiProductsByIdArchiveData, PatchApiProductsByIdArchiveErrors, PatchApiProductsByIdArchiveResponses, PatchApiProductsByIdData, PatchApiProductsByIdErrors, PatchApiProductsByIdResponses, PatchApiProductVariantsByIdData, PatchApiProductVariantsByIdErrors, PatchApiProductVariantsByIdResponses, PostApiCustomersRegisterData, PostApiCustomersRegisterErrors, PostApiCustomersRegisterResponses, PostApiCustomersSignInData, PostApiCustomersSignInErrors, PostApiCustomersSignInResponses, PostApiCustomersStaffData, PostApiCustomersStaffErrors, PostApiCustomersStaffResponses, PostApiOrdersByOrderIdLineItemsData, PostApiOrdersByOrderIdLineItemsErrors, PostApiOrdersByOrderIdLineItemsResponses, PostApiOrdersByOrderIdPaymentsData, PostApiOrdersByOrderIdPaymentsErrors, PostApiOrdersByOrderIdPaymentsResponses, PostApiOrdersData, PostApiOrdersErrors, PostApiOrdersResponses, PostApiProductsData, PostApiProductsErrors, PostApiProductsResponses, PostApiProductVariantsByProductVariantIdAdjustData, PostApiProductVariantsByProductVariantIdAdjustErrors, PostApiProductVariantsByProductVariantIdAdjustResponses, PostApiProductVariantsByProductVariantIdRestockData, PostApiProductVariantsByProductVariantIdRestockErrors, PostApiProductVariantsByProductVariantIdRestockResponses, PostApiProductVariantsData, PostApiProductVariantsErrors, PostApiProductVariantsResponses, PostApiStaffSignInData, PostApiStaffSignInErrors, PostApiStaffSignInResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -19,234 +19,384 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Add a new pet to the store.
- *
- * Add a new pet to the store.
+ * /customers operation on customer resource
  */
-export const addPet = <ThrowOnError extends boolean = true>(options: Options<AddPetData, ThrowOnError>): RequestResult<AddPetResponses, AddPetErrors, ThrowOnError> => (options.client ?? client).post<AddPetResponses, AddPetErrors, ThrowOnError>({
+export const getApiCustomers = <ThrowOnError extends boolean = true>(options?: Options<GetApiCustomersData, ThrowOnError>): RequestResult<GetApiCustomersResponses, GetApiCustomersErrors, ThrowOnError> => (options?.client ?? client).get<GetApiCustomersResponses, GetApiCustomersErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet',
+    url: '/api/customers',
+    ...options
+});
+
+/**
+ * Register a new customer with an email and password.
+ */
+export const postApiCustomersRegister = <ThrowOnError extends boolean = true>(options: Options<PostApiCustomersRegisterData, ThrowOnError>): RequestResult<PostApiCustomersRegisterResponses, PostApiCustomersRegisterErrors, ThrowOnError> => (options.client ?? client).post<PostApiCustomersRegisterResponses, PostApiCustomersRegisterErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers/register',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/vnd.api+json',
         ...options.headers
     }
 });
 
 /**
- * Update an existing pet.
- *
- * Update an existing pet by Id.
+ * Attempt to sign in using a email and password.
  */
-export const updatePet = <ThrowOnError extends boolean = true>(options: Options<UpdatePetData, ThrowOnError>): RequestResult<UpdatePetResponses, UpdatePetErrors, ThrowOnError> => (options.client ?? client).put<UpdatePetResponses, UpdatePetErrors, ThrowOnError>({
+export const postApiCustomersSignIn = <ThrowOnError extends boolean = true>(options: Options<PostApiCustomersSignInData, ThrowOnError>): RequestResult<PostApiCustomersSignInResponses, PostApiCustomersSignInErrors, ThrowOnError> => (options.client ?? client).post<PostApiCustomersSignInResponses, PostApiCustomersSignInErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet',
+    url: '/api/customers/sign-in',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/vnd.api+json',
         ...options.headers
     }
 });
 
 /**
- * Finds Pets by status.
- *
- * Multiple status values can be provided with comma separated strings.
+ * /customers/staff operation on customer resource
  */
-export const findPetsByStatus = <ThrowOnError extends boolean = true>(options: Options<FindPetsByStatusData, ThrowOnError>): RequestResult<FindPetsByStatusResponses, FindPetsByStatusErrors, ThrowOnError> => (options.client ?? client).get<FindPetsByStatusResponses, FindPetsByStatusErrors, ThrowOnError>({
+export const postApiCustomersStaff = <ThrowOnError extends boolean = true>(options: Options<PostApiCustomersStaffData, ThrowOnError>): RequestResult<PostApiCustomersStaffResponses, PostApiCustomersStaffErrors, ThrowOnError> => (options.client ?? client).post<PostApiCustomersStaffResponses, PostApiCustomersStaffErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet/findByStatus',
-    ...options
-});
-
-/**
- * Finds Pets by tags.
- *
- * Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
- */
-export const findPetsByTags = <ThrowOnError extends boolean = true>(options: Options<FindPetsByTagsData, ThrowOnError>): RequestResult<FindPetsByTagsResponses, FindPetsByTagsErrors, ThrowOnError> => (options.client ?? client).get<FindPetsByTagsResponses, FindPetsByTagsErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet/findByTags',
-    ...options
-});
-
-/**
- * Deletes a pet.
- *
- * Delete a pet.
- */
-export const deletePet = <ThrowOnError extends boolean = true>(options: Options<DeletePetData, ThrowOnError>): RequestResult<DeletePetResponses, DeletePetErrors, ThrowOnError> => (options.client ?? client).delete<DeletePetResponses, DeletePetErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet/{petId}',
-    ...options
-});
-
-/**
- * Find pet by ID.
- *
- * Returns a single pet.
- */
-export const getPetById = <ThrowOnError extends boolean = true>(options: Options<GetPetByIdData, ThrowOnError>): RequestResult<GetPetByIdResponses, GetPetByIdErrors, ThrowOnError> => (options.client ?? client).get<GetPetByIdResponses, GetPetByIdErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ name: 'api_key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
-    url: '/pet/{petId}',
-    ...options
-});
-
-/**
- * Updates a pet in the store with form data.
- *
- * Updates a pet resource based on the form data.
- */
-export const updatePetWithForm = <ThrowOnError extends boolean = true>(options: Options<UpdatePetWithFormData, ThrowOnError>): RequestResult<UpdatePetWithFormResponses, UpdatePetWithFormErrors, ThrowOnError> => (options.client ?? client).post<UpdatePetWithFormResponses, UpdatePetWithFormErrors, ThrowOnError>({
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet/{petId}',
-    ...options
-});
-
-/**
- * Uploads an image.
- *
- * Upload image of the pet.
- */
-export const uploadFile = <ThrowOnError extends boolean = true>(options: Options<UploadFileData, ThrowOnError>): RequestResult<UploadFileResponses, UploadFileErrors, ThrowOnError> => (options.client ?? client).post<UploadFileResponses, UploadFileErrors, ThrowOnError>({
-    bodySerializer: null,
-    responseType: 'json',
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/pet/{petId}/uploadImage',
+    url: '/api/customers/staff',
     ...options,
     headers: {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': 'application/vnd.api+json',
         ...options.headers
     }
 });
 
 /**
- * Returns pet inventories by status.
- *
- * Returns a map of status codes to quantities.
+ * Approve a customer account for password sign-in.
  */
-export const getInventory = <ThrowOnError extends boolean = true>(options?: Options<GetInventoryData, ThrowOnError>): RequestResult<GetInventoryResponses, GetInventoryErrors, ThrowOnError> => (options?.client ?? client).get<GetInventoryResponses, GetInventoryErrors, ThrowOnError>({
+export const patchApiCustomersByIdConfirm = <ThrowOnError extends boolean = true>(options: Options<PatchApiCustomersByIdConfirmData, ThrowOnError>): RequestResult<PatchApiCustomersByIdConfirmResponses, PatchApiCustomersByIdConfirmErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiCustomersByIdConfirmResponses, PatchApiCustomersByIdConfirmErrors, ThrowOnError>({
     responseType: 'json',
-    security: [{ name: 'api_key', type: 'apiKey' }],
-    url: '/store/inventory',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/customers/{id}/confirm',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /orders operation on order resource
+ */
+export const getApiOrders = <ThrowOnError extends boolean = true>(options?: Options<GetApiOrdersData, ThrowOnError>): RequestResult<GetApiOrdersResponses, GetApiOrdersErrors, ThrowOnError> => (options?.client ?? client).get<GetApiOrdersResponses, GetApiOrdersErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders',
     ...options
 });
 
 /**
- * Place an order for a pet.
- *
- * Place a new order in the store.
+ * /orders operation on order resource
  */
-export const placeOrder = <ThrowOnError extends boolean = true>(options?: Options<PlaceOrderData, ThrowOnError>): RequestResult<PlaceOrderResponses, PlaceOrderErrors, ThrowOnError> => (options?.client ?? client).post<PlaceOrderResponses, PlaceOrderErrors, ThrowOnError>({
+export const postApiOrders = <ThrowOnError extends boolean = true>(options?: Options<PostApiOrdersData, ThrowOnError>): RequestResult<PostApiOrdersResponses, PostApiOrdersErrors, ThrowOnError> => (options?.client ?? client).post<PostApiOrdersResponses, PostApiOrdersErrors, ThrowOnError>({
     responseType: 'json',
-    url: '/store/order',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/vnd.api+json',
         ...options?.headers
     }
 });
 
 /**
- * Delete purchase order by identifier.
- *
- * For valid response try integer IDs with value < 1000. Anything above 1000 or non-integers will generate API errors.
+ * /orders/:id operation on order resource
  */
-export const deleteOrder = <ThrowOnError extends boolean = true>(options: Options<DeleteOrderData, ThrowOnError>): RequestResult<DeleteOrderResponses, DeleteOrderErrors, ThrowOnError> => (options.client ?? client).delete<DeleteOrderResponses, DeleteOrderErrors, ThrowOnError>({ url: '/store/order/{orderId}', ...options });
-
-/**
- * Find purchase order by ID.
- *
- * For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.
- */
-export const getOrderById = <ThrowOnError extends boolean = true>(options: Options<GetOrderByIdData, ThrowOnError>): RequestResult<GetOrderByIdResponses, GetOrderByIdErrors, ThrowOnError> => (options.client ?? client).get<GetOrderByIdResponses, GetOrderByIdErrors, ThrowOnError>({
+export const getApiOrdersById = <ThrowOnError extends boolean = true>(options: Options<GetApiOrdersByIdData, ThrowOnError>): RequestResult<GetApiOrdersByIdResponses, GetApiOrdersByIdErrors, ThrowOnError> => (options.client ?? client).get<GetApiOrdersByIdResponses, GetApiOrdersByIdErrors, ThrowOnError>({
     responseType: 'json',
-    url: '/store/order/{orderId}',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}',
     ...options
 });
 
 /**
- * Create user.
- *
- * This can only be done by the logged in user.
+ * /orders/:id/cancel operation on order resource
  */
-export const createUser = <ThrowOnError extends boolean = true>(options?: Options<CreateUserData, ThrowOnError>): RequestResult<CreateUserResponses, CreateUserErrors, ThrowOnError> => (options?.client ?? client).post<CreateUserResponses, CreateUserErrors, ThrowOnError>({
+export const patchApiOrdersByIdCancel = <ThrowOnError extends boolean = true>(options: Options<PatchApiOrdersByIdCancelData, ThrowOnError>): RequestResult<PatchApiOrdersByIdCancelResponses, PatchApiOrdersByIdCancelErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiOrdersByIdCancelResponses, PatchApiOrdersByIdCancelErrors, ThrowOnError>({
     responseType: 'json',
-    url: '/user',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}/cancel',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
     }
 });
 
 /**
- * Creates list of users with given input array.
- *
- * Creates list of users with given input array.
+ * /orders/:id/discount operation on order resource
  */
-export const createUsersWithListInput = <ThrowOnError extends boolean = true>(options?: Options<CreateUsersWithListInputData, ThrowOnError>): RequestResult<CreateUsersWithListInputResponses, CreateUsersWithListInputErrors, ThrowOnError> => (options?.client ?? client).post<CreateUsersWithListInputResponses, CreateUsersWithListInputErrors, ThrowOnError>({
+export const patchApiOrdersByIdDiscount = <ThrowOnError extends boolean = true>(options: Options<PatchApiOrdersByIdDiscountData, ThrowOnError>): RequestResult<PatchApiOrdersByIdDiscountResponses, PatchApiOrdersByIdDiscountErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiOrdersByIdDiscountResponses, PatchApiOrdersByIdDiscountErrors, ThrowOnError>({
     responseType: 'json',
-    url: '/user/createWithList',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}/discount',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
     }
 });
 
 /**
- * Logs user into the system.
- *
- * Log into the system.
+ * /orders/:id/fulfill operation on order resource
  */
-export const loginUser = <ThrowOnError extends boolean = true>(options?: Options<LoginUserData, ThrowOnError>): RequestResult<LoginUserResponses, LoginUserErrors, ThrowOnError> => (options?.client ?? client).get<LoginUserResponses, LoginUserErrors, ThrowOnError>({
+export const patchApiOrdersByIdFulfill = <ThrowOnError extends boolean = true>(options: Options<PatchApiOrdersByIdFulfillData, ThrowOnError>): RequestResult<PatchApiOrdersByIdFulfillResponses, PatchApiOrdersByIdFulfillErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiOrdersByIdFulfillResponses, PatchApiOrdersByIdFulfillErrors, ThrowOnError>({
     responseType: 'json',
-    url: '/user/login',
-    ...options
-});
-
-/**
- * Logs out current logged in user session.
- *
- * Log user out of the system.
- */
-export const logoutUser = <ThrowOnError extends boolean = true>(options?: Options<LogoutUserData, ThrowOnError>): RequestResult<LogoutUserResponses, LogoutUserErrors, ThrowOnError> => (options?.client ?? client).get<LogoutUserResponses, LogoutUserErrors, ThrowOnError>({ url: '/user/logout', ...options });
-
-/**
- * Delete user resource.
- *
- * This can only be done by the logged in user.
- */
-export const deleteUser = <ThrowOnError extends boolean = true>(options: Options<DeleteUserData, ThrowOnError>): RequestResult<DeleteUserResponses, DeleteUserErrors, ThrowOnError> => (options.client ?? client).delete<DeleteUserResponses, DeleteUserErrors, ThrowOnError>({ url: '/user/{username}', ...options });
-
-/**
- * Get user by user name.
- *
- * Get user detail based on username.
- */
-export const getUserByName = <ThrowOnError extends boolean = true>(options: Options<GetUserByNameData, ThrowOnError>): RequestResult<GetUserByNameResponses, GetUserByNameErrors, ThrowOnError> => (options.client ?? client).get<GetUserByNameResponses, GetUserByNameErrors, ThrowOnError>({
-    responseType: 'json',
-    url: '/user/{username}',
-    ...options
-});
-
-/**
- * Update user resource.
- *
- * This can only be done by the logged in user.
- */
-export const updateUser = <ThrowOnError extends boolean = true>(options: Options<UpdateUserData, ThrowOnError>): RequestResult<UpdateUserResponses, UpdateUserErrors, ThrowOnError> => (options.client ?? client).put<UpdateUserResponses, UpdateUserErrors, ThrowOnError>({
-    url: '/user/{username}',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}/fulfill',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /orders/:id/submit operation on order resource
+ */
+export const patchApiOrdersByIdSubmit = <ThrowOnError extends boolean = true>(options: Options<PatchApiOrdersByIdSubmitData, ThrowOnError>): RequestResult<PatchApiOrdersByIdSubmitResponses, PatchApiOrdersByIdSubmitErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiOrdersByIdSubmitResponses, PatchApiOrdersByIdSubmitErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{id}/submit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /orders/:order_id/line-items operation on order_line_item resource
+ */
+export const postApiOrdersByOrderIdLineItems = <ThrowOnError extends boolean = true>(options: Options<PostApiOrdersByOrderIdLineItemsData, ThrowOnError>): RequestResult<PostApiOrdersByOrderIdLineItemsResponses, PostApiOrdersByOrderIdLineItemsErrors, ThrowOnError> => (options.client ?? client).post<PostApiOrdersByOrderIdLineItemsResponses, PostApiOrdersByOrderIdLineItemsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{order_id}/line-items',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /orders/:order_id/line-items/:id operation on order_line_item resource
+ */
+export const deleteApiOrdersByOrderIdLineItemsById = <ThrowOnError extends boolean = true>(options: Options<DeleteApiOrdersByOrderIdLineItemsByIdData, ThrowOnError>): RequestResult<DeleteApiOrdersByOrderIdLineItemsByIdResponses, DeleteApiOrdersByOrderIdLineItemsByIdErrors, ThrowOnError> => (options.client ?? client).delete<DeleteApiOrdersByOrderIdLineItemsByIdResponses, DeleteApiOrdersByOrderIdLineItemsByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{order_id}/line-items/{id}',
+    ...options
+});
+
+/**
+ * /orders/:order_id/line-items/:id operation on order_line_item resource
+ */
+export const patchApiOrdersByOrderIdLineItemsById = <ThrowOnError extends boolean = true>(options: Options<PatchApiOrdersByOrderIdLineItemsByIdData, ThrowOnError>): RequestResult<PatchApiOrdersByOrderIdLineItemsByIdResponses, PatchApiOrdersByOrderIdLineItemsByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiOrdersByOrderIdLineItemsByIdResponses, PatchApiOrdersByOrderIdLineItemsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{order_id}/line-items/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /orders/:order_id/payments operation on payment resource
+ */
+export const postApiOrdersByOrderIdPayments = <ThrowOnError extends boolean = true>(options: Options<PostApiOrdersByOrderIdPaymentsData, ThrowOnError>): RequestResult<PostApiOrdersByOrderIdPaymentsResponses, PostApiOrdersByOrderIdPaymentsErrors, ThrowOnError> => (options.client ?? client).post<PostApiOrdersByOrderIdPaymentsResponses, PostApiOrdersByOrderIdPaymentsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/orders/{order_id}/payments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /payments/:id/void operation on payment resource
+ */
+export const patchApiPaymentsByIdVoid = <ThrowOnError extends boolean = true>(options: Options<PatchApiPaymentsByIdVoidData, ThrowOnError>): RequestResult<PatchApiPaymentsByIdVoidResponses, PatchApiPaymentsByIdVoidErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiPaymentsByIdVoidResponses, PatchApiPaymentsByIdVoidErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/payments/{id}/void',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /product-variants operation on product_variant resource
+ */
+export const getApiProductVariants = <ThrowOnError extends boolean = true>(options?: Options<GetApiProductVariantsData, ThrowOnError>): RequestResult<GetApiProductVariantsResponses, GetApiProductVariantsErrors, ThrowOnError> => (options?.client ?? client).get<GetApiProductVariantsResponses, GetApiProductVariantsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants',
+    ...options
+});
+
+/**
+ * /product-variants operation on product_variant resource
+ */
+export const postApiProductVariants = <ThrowOnError extends boolean = true>(options: Options<PostApiProductVariantsData, ThrowOnError>): RequestResult<PostApiProductVariantsResponses, PostApiProductVariantsErrors, ThrowOnError> => (options.client ?? client).post<PostApiProductVariantsResponses, PostApiProductVariantsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /product-variants/:id operation on product_variant resource
+ */
+export const getApiProductVariantsById = <ThrowOnError extends boolean = true>(options: Options<GetApiProductVariantsByIdData, ThrowOnError>): RequestResult<GetApiProductVariantsByIdResponses, GetApiProductVariantsByIdErrors, ThrowOnError> => (options.client ?? client).get<GetApiProductVariantsByIdResponses, GetApiProductVariantsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants/{id}',
+    ...options
+});
+
+/**
+ * /product-variants/:id operation on product_variant resource
+ */
+export const patchApiProductVariantsById = <ThrowOnError extends boolean = true>(options: Options<PatchApiProductVariantsByIdData, ThrowOnError>): RequestResult<PatchApiProductVariantsByIdResponses, PatchApiProductVariantsByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiProductVariantsByIdResponses, PatchApiProductVariantsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /product-variants/:product_variant_id/adjust operation on stock_movement resource
+ */
+export const postApiProductVariantsByProductVariantIdAdjust = <ThrowOnError extends boolean = true>(options: Options<PostApiProductVariantsByProductVariantIdAdjustData, ThrowOnError>): RequestResult<PostApiProductVariantsByProductVariantIdAdjustResponses, PostApiProductVariantsByProductVariantIdAdjustErrors, ThrowOnError> => (options.client ?? client).post<PostApiProductVariantsByProductVariantIdAdjustResponses, PostApiProductVariantsByProductVariantIdAdjustErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants/{product_variant_id}/adjust',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /product-variants/:product_variant_id/restock operation on stock_movement resource
+ */
+export const postApiProductVariantsByProductVariantIdRestock = <ThrowOnError extends boolean = true>(options: Options<PostApiProductVariantsByProductVariantIdRestockData, ThrowOnError>): RequestResult<PostApiProductVariantsByProductVariantIdRestockResponses, PostApiProductVariantsByProductVariantIdRestockErrors, ThrowOnError> => (options.client ?? client).post<PostApiProductVariantsByProductVariantIdRestockResponses, PostApiProductVariantsByProductVariantIdRestockErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants/{product_variant_id}/restock',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /product-variants/:product_variant_id/stock-movements operation on stock_movement resource
+ */
+export const getApiProductVariantsByProductVariantIdStockMovements = <ThrowOnError extends boolean = true>(options: Options<GetApiProductVariantsByProductVariantIdStockMovementsData, ThrowOnError>): RequestResult<GetApiProductVariantsByProductVariantIdStockMovementsResponses, GetApiProductVariantsByProductVariantIdStockMovementsErrors, ThrowOnError> => (options.client ?? client).get<GetApiProductVariantsByProductVariantIdStockMovementsResponses, GetApiProductVariantsByProductVariantIdStockMovementsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/product-variants/{product_variant_id}/stock-movements',
+    ...options
+});
+
+/**
+ * /products operation on product resource
+ */
+export const getApiProducts = <ThrowOnError extends boolean = true>(options?: Options<GetApiProductsData, ThrowOnError>): RequestResult<GetApiProductsResponses, GetApiProductsErrors, ThrowOnError> => (options?.client ?? client).get<GetApiProductsResponses, GetApiProductsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products',
+    ...options
+});
+
+/**
+ * /products operation on product resource
+ */
+export const postApiProducts = <ThrowOnError extends boolean = true>(options: Options<PostApiProductsData, ThrowOnError>): RequestResult<PostApiProductsResponses, PostApiProductsErrors, ThrowOnError> => (options.client ?? client).post<PostApiProductsResponses, PostApiProductsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /products/:id operation on product resource
+ */
+export const getApiProductsById = <ThrowOnError extends boolean = true>(options: Options<GetApiProductsByIdData, ThrowOnError>): RequestResult<GetApiProductsByIdResponses, GetApiProductsByIdErrors, ThrowOnError> => (options.client ?? client).get<GetApiProductsByIdResponses, GetApiProductsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}',
+    ...options
+});
+
+/**
+ * /products/:id operation on product resource
+ */
+export const patchApiProductsById = <ThrowOnError extends boolean = true>(options: Options<PatchApiProductsByIdData, ThrowOnError>): RequestResult<PatchApiProductsByIdResponses, PatchApiProductsByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiProductsByIdResponses, PatchApiProductsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * /products/:id/archive operation on product resource
+ */
+export const patchApiProductsByIdArchive = <ThrowOnError extends boolean = true>(options: Options<PatchApiProductsByIdArchiveData, ThrowOnError>): RequestResult<PatchApiProductsByIdArchiveResponses, PatchApiProductsByIdArchiveErrors, ThrowOnError> => (options.client ?? client).patch<PatchApiProductsByIdArchiveResponses, PatchApiProductsByIdArchiveErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/products/{id}/archive',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
+        ...options.headers
+    }
+});
+
+/**
+ * Attempt to sign in using a email and password.
+ */
+export const postApiStaffSignIn = <ThrowOnError extends boolean = true>(options: Options<PostApiStaffSignInData, ThrowOnError>): RequestResult<PostApiStaffSignInResponses, PostApiStaffSignInErrors, ThrowOnError> => (options.client ?? client).post<PostApiStaffSignInResponses, PostApiStaffSignInErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/staff/sign-in',
+    ...options,
+    headers: {
+        'Content-Type': 'application/vnd.api+json',
         ...options.headers
     }
 });

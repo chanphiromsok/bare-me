@@ -1,7 +1,7 @@
 import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
-  input: "https://petstore3.swagger.io/api/v3/openapi.json",
+  input: "http://localhost:4000/api/open-api",
   output: {
     path: "./src/api/generated",
     indexFile: false,

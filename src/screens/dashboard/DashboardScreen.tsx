@@ -1,120 +1,159 @@
-import { Text, View } from "react-native";
-import dayjs from "dayjs";
-import { type GraphPoint } from "react-native-graph";
+import {
+  LegendList,
+  type LegendListRenderItemProps,
+} from "@legendapp/list/react-native";
+import { Pressable, Text, View } from "react-native";
 
-import BranchFilterRow from "./components/BranchFilterRow";
-import { dashboardColors } from "./components/dashboardColors";
-import DateRangeField from "./components/DateRangeField";
-import ShipmentTrendsCard from "./components/ShipmentTrendsCard";
-import StatCard, { type StatItem } from "./components/StatCard";
-import BrandLogo from "../../components/BrandLogo";
-import { LazyScrollView } from "../../components/scroll/LazyScrollView";
+import AppIcon, { type AppIconName } from "../../components/icons/AppIcon";
+import OperationsHeader from "../../components/operations/OperationsHeader";
+import StatusPill from "../../components/operations/StatusPill";
+import {
+  type Activity,
+  useActivityQuery,
+} from "../../features/operations/queries";
+import { colors } from "../../theme";
 
-const STATS: StatItem[] = [
+const metrics = [
   {
-    label: "Total Shipments",
-    value: "120",
-    delta: "-95.32%",
-    direction: "down",
-    sentiment: "bad",
-    icon: "shipment-box",
-    iconColor: dashboardColors.shipmentsIcon,
-    iconBackground: dashboardColors.shipmentsIconBg,
+    label: "Pending orders",
+    value: "12",
+    note: "4 need review",
+    tone: "warning",
   },
+  { label: "Sales today", value: "$1,248", note: "18 orders", tone: "success" },
+] as const;
+
+const quickActions: {
+  icon: AppIconName;
+  label: string;
+  supporting: string;
+}[] = [
+  { icon: "operation", label: "New order", supporting: "Phone or in-store" },
   {
-    label: "Total Revenue",
-    value: "KHR 1,065,000",
-    delta: "+12.48%",
-    direction: "up",
-    sentiment: "good",
-    icon: "dollar-circle",
-    iconColor: dashboardColors.revenueIcon,
-    iconBackground: dashboardColors.revenueIconBg,
+    icon: "self-service",
+    label: "Add customer",
+    supporting: "Retail or wholesale",
   },
-  {
-    label: "Delivered",
-    value: "42",
-    delta: "+8.75%",
-    direction: "up",
-    sentiment: "good",
-    icon: "delivered-check",
-    iconColor: dashboardColors.deliveredIcon,
-    iconBackground: dashboardColors.deliveredIconBg,
-  },
-  {
-    label: "Pending Void Requests",
-    value: "KHR 1,065,000",
-    delta: "+100.00%",
-    direction: "up",
-    sentiment: "bad",
-    icon: "void-doc",
-    iconColor: dashboardColors.voidIcon,
-    iconBackground: dashboardColors.voidIconBg,
-  },
+  { icon: "parcel", label: "Add product", supporting: "Create with variants" },
+  { icon: "scan", label: "Restock", supporting: "Scan or search SKU" },
 ];
 
-const TREND_VALUES = [
-  0.75, 0.9, 1.6, 2.3, 2.5, 2.4, 2.35, 2.5, 2.9, 3.15, 3.2, 3.1, 3.05, 3.25,
-  3.35, 3.4,
-];
+function ActivityCard({ item }: LegendListRenderItemProps<Activity>) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+      <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted">
+        <AppIcon name="history" color={colors.textSubtle} size={19} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-semibold text-foreground">
+          {item.title}
+        </Text>
+        <Text className="mt-0.5 text-xs text-muted">{item.detail}</Text>
+      </View>
+      <StatusPill
+        label={item.status}
+        tone={item.status === "Restocked" ? "success" : "warning"}
+      />
+    </View>
+  );
+}
 
-const TREND_POINTS: GraphPoint[] = TREND_VALUES.map((value, index) => ({
-  value,
-  date: dayjs("2026-07-06").add(index * 6, "hour").toDate(),
-}));
+function DashboardHeader() {
+  return (
+    <View className="mb-3 gap-6">
+      <View className="flex-row gap-3">
+        {metrics.map((metric) => (
+          <View
+            className="min-h-32 flex-1 justify-between rounded-2xl border border-border bg-surface p-4"
+            key={metric.label}
+          >
+            <Text className="text-[13px] font-medium text-muted">
+              {metric.label}
+            </Text>
+            <Text className="mt-3 text-[28px] font-bold leading-8 text-foreground">
+              {metric.value}
+            </Text>
+            <Text
+              className={
+                metric.tone === "success"
+                  ? "mt-1 text-xs font-semibold text-success"
+                  : "mt-1 text-xs font-semibold text-warning"
+              }
+            >
+              {metric.note}
+            </Text>
+          </View>
+        ))}
+      </View>
 
-const TREND_X_LABELS = ["Jul 06", "Jul 07", "Jul 08", "Jul 09"];
+      <View>
+        <Text className="text-lg font-bold text-foreground">Quick actions</Text>
+        <Text className="mt-1 text-sm text-muted">
+          Start the most common store tasks.
+        </Text>
+        <View className="mt-3 flex-row flex-wrap justify-between gap-y-3">
+          {quickActions.map((action) => (
+            <Pressable
+              accessibilityLabel={`${action.label}. ${action.supporting}`}
+              accessibilityRole="button"
+              className="w-[48.5%] rounded-2xl border border-border bg-surface p-4 active:bg-primary-soft"
+              key={action.label}
+            >
+              <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary-soft">
+                <AppIcon name={action.icon} color={colors.primary} size={22} />
+              </View>
+              <Text className="mt-3 text-[15px] font-bold text-foreground">
+                {action.label}
+              </Text>
+              <Text className="mt-1 text-xs leading-4 text-muted">
+                {action.supporting}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
 
-const TODAY = dayjs().format("YYYY-MM-DD");
+      <View className="flex-row items-end justify-between">
+        <View>
+          <Text className="text-lg font-bold text-foreground">
+            Recent activity
+          </Text>
+          <Text className="mt-1 text-sm text-muted">
+            Latest changes across the store.
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          className="min-h-11 justify-center px-1"
+        >
+          <Text className="text-sm font-semibold text-primary">View all</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 export default function DashboardScreen() {
+  const activityQuery = useActivityQuery();
+
   return (
-    <View className="flex-1 bg-surface-muted pt-safe">
-      <View className="px-5">
-        <BrandLogo />
-      </View>
-      <LazyScrollView
-        className="flex-1"
-        contentContainerClassName="px-5 pb-28"
-        showsVerticalScrollIndicator={false}
+    <View className="flex-1 bg-background pt-safe">
+      <OperationsHeader
+        eyebrow="Monday, 13 July"
+        title="Good morning, Phirom"
+        subtitle="Here is what needs attention today."
+      />
+      <LegendList
+        contentContainerStyle={{ paddingBottom: 112, paddingHorizontal: 20 }}
+        data={activityQuery.data ?? []}
+        estimatedItemSize={78}
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={<DashboardHeader />}
         recycleItems
-      >
-        <Text className="text-[16px] font-bold text-primary">DashBoard</Text>
-
-        <View className="mt-[7px] w-[78%]">
-          <DateRangeField range={{ from: TODAY, to: TODAY }} />
-        </View>
-
-        <View className="mt-[10px]">
-          <BranchFilterRow branch="All Branch" />
-        </View>
-
-        <View className="mt-[10px] gap-[14px]">
-          <View className="flex-row gap-[11px]">
-            <View className="flex-[176]">
-              <StatCard item={STATS[0]} />
-            </View>
-            <View className="flex-[203]">
-              <StatCard item={STATS[1]} />
-            </View>
-          </View>
-          <View className="flex-row gap-[11px]">
-            <View className="flex-[176]">
-              <StatCard item={STATS[2]} />
-            </View>
-            <View className="flex-[203]">
-              <StatCard item={STATS[3]} />
-            </View>
-          </View>
-        </View>
-
-        <View className="mt-[13px]">
-          <ShipmentTrendsCard
-            points={TREND_POINTS}
-            xLabels={TREND_X_LABELS}
-          />
-        </View>
-      </LazyScrollView>
+        renderItem={(props) => <ActivityCard {...props} />}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 }

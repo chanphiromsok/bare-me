@@ -1,7 +1,9 @@
 import { createMMKV } from "react-native-mmkv";
 
+import { Configs } from "../constant/config";
+
 export const appStorage = createMMKV({
-  compareBeforeSet: true,
+  encryptionKey: Configs.MMKV_ENCRYPTION_KEY,
   encryptionType: "AES-128",
   id: "bare.app-storage",
 });

@@ -1,4 +1,3 @@
-import { CommonActions, useNavigation } from "@react-navigation/native";
 import { useForm } from "react-hook-form";
 import {
   KeyboardAvoidingView,
@@ -9,6 +8,7 @@ import {
   View,
 } from "react-native";
 
+import { useStaffSignInMutation } from "../../api/auth/useStaffSignInMutation";
 import TextController from "../../components/form/TextController";
 import { colors } from "../../theme";
 import {
@@ -18,7 +18,7 @@ import {
 } from "./loginScreenValidation";
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
+  const signInMutation = useStaffSignInMutation();
   const {
     control,
     formState: { isSubmitting },
@@ -28,14 +28,15 @@ export default function LoginScreen() {
     resolver: loginResolver,
   });
 
-  const onSubmit = (_values: LoginFormValues) => {
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: "Tabs" }],
-      }),
-    );
+  const onSubmit = async (values: LoginFormValues) => {
+    try {
+      await signInMutation.mutateAsync(values);
+    } catch {
+      // The mutation state renders a safe message without exposing server data.
+    }
   };
+
+  const submitting = isSubmitting || signInMutation.isPending;
 
   return (
     <KeyboardAvoidingView
@@ -44,8 +45,11 @@ export default function LoginScreen() {
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Login</Text>
-          <Text style={styles.subtitle}>Sign in with your account.</Text>
+          <Text style={styles.eyebrow}>STAFF ACCESS</Text>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>
+            Sign in to manage orders, products, customers, and inventory.
+          </Text>
         </View>
 
         <View style={styles.form}>
@@ -56,7 +60,7 @@ export default function LoginScreen() {
             keyboardType="email-address"
             label="Email"
             name="email"
-            placeholder="Email"
+            placeholder="staff@example.com"
             textContentType="emailAddress"
           />
           <TextController
@@ -64,7 +68,7 @@ export default function LoginScreen() {
             control={control}
             label="Password"
             name="password"
-            placeholder="Password"
+            placeholder="Enter your password"
             secureTextEntry
             textContentType="password"
           />
@@ -72,18 +76,27 @@ export default function LoginScreen() {
 
         <Pressable
           accessibilityRole="button"
-          disabled={isSubmitting}
+          disabled={submitting}
           onPress={handleSubmit(onSubmit)}
           style={({ pressed }) => [
             styles.submitButton,
             pressed ? styles.submitButtonPressed : null,
-            isSubmitting ? styles.submitButtonDisabled : null,
+            submitting ? styles.submitButtonDisabled : null,
           ]}
         >
           <Text style={styles.submitText}>
-            {isSubmitting ? "Signing in..." : "Login"}
+            {submitting ? "Signing in..." : "Sign in"}
           </Text>
         </Pressable>
+        {signInMutation.isError ? (
+          <Text accessibilityRole="alert" style={styles.errorText}>
+            Sign-in failed. Check your credentials and connection, then try
+            again.
+          </Text>
+        ) : null}
+        <Text style={styles.supportingText}>
+          This app is for authorized staff and administrators only.
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -91,8 +104,20 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 24,
+    gap: 28,
     padding: 24,
+  },
+  eyebrow: {
+    color: colors.brandOrange,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.4,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
   form: {
     gap: 16,
@@ -127,13 +152,20 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
+    maxWidth: 340,
+  },
+  supportingText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
   title: {
     color: colors.text,
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: "800",
-    lineHeight: 38,
+    lineHeight: 40,
   },
 });

@@ -1,7 +1,7 @@
 import SuperConfig from "react-native-superconfig";
 
 const fallback = {
-  API_URL: "https://petstore3.swagger.io/api/v3",
+  API_URL: "http://localhost:4000",
   APP_ENV: "development",
   MMKV_ENCRYPTION_KEY: "bare-mmkv-key-32-byte-fallback!!",
 } as const;
@@ -19,6 +19,6 @@ export const Configs = {
     accessToken: "auth.accessToken",
     appTheme: "preferences.theme",
     locale: "preferences.locale",
-    userInfo: "preferences.userInfo",
+    userInfo: "auth.userInfo",
   },
 } as const;

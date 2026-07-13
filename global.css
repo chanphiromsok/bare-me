@@ -1,30 +1,33 @@
-@import 'tailwindcss';
-@import 'uniwind';
+@import "tailwindcss";
+@import "uniwind";
 
 @theme {
-  --color-background: #fdfdfd;
-  --color-surface: #fefefe;
-  --color-surface-muted: #f8f9fc;
-  --color-border: #e5e5e5;
-  --color-foreground: #111827;
-  --color-muted: #827f7f;
-  --color-subtle: #4b5563;
+  --color-background: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef2f7;
+  --color-border: #dce3ec;
+  --color-foreground: #142033;
+  --color-muted: #5e6b7d;
+  --color-subtle: #405069;
   --color-on-primary: #ffffff;
-  --color-primary: #204383;
-  --color-brand-orange: #ff4d22;
-  --color-primary-pressed: #183464;
-  --color-primary-soft: #f2f4fd;
-  --color-icon: #204383;
-  --color-icon-muted: rgb(130 127 127 / 65%);
-  --color-tab-active: #204383;
-  --color-tab-inactive: rgb(130 127 127 / 65%);
-  --color-danger: #b3261e;
-  --color-success: #2e7d32;
-  --color-warning: #b26a00;
-  --color-info: #0d74ce;
+  --color-primary: #203f78;
+  --color-brand-orange: #f05a2a;
+  --color-primary-pressed: #17315f;
+  --color-primary-soft: #e8eef8;
+  --color-icon: #203f78;
+  --color-icon-muted: #738096;
+  --color-tab-active: #203f78;
+  --color-tab-inactive: #738096;
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-success: #18794e;
+  --color-success-soft: #ecfdf3;
+  --color-warning: #a15c00;
+  --color-warning-soft: #fff7e6;
+  --color-info: #1769aa;
+  --color-info-soft: #eef6ff;
 }
 
 @theme static {
   --shadow-card: 1px 1px 4.5px rgb(0 0 0 / 25%);
 }
-

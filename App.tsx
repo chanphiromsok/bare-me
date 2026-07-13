@@ -1,5 +1,4 @@
 import "./global.css";
-import "./src/api/interceptor";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
