@@ -12,7 +12,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 | ---------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Authentication         | Passed after STAFF-01 | Sign-out works. The misleading account-like placeholder was replaced so an empty form can no longer look prefilled. Native autofill remains enabled.            |
 | Dashboard              | Passed after STAFF-02 | Date and greeting use the current device time and stored staff profile. Pending orders, today's fulfilled sales, and recent activity come from the API.         |
-| Dashboard navigation   | Failed                | `View all` can reopen a retained order detail and leave the Orders tab stuck on that detail.                                                                    |
+| Dashboard navigation   | Passed after STAFF-03 | `View all` targets the order list, activity deep links preserve a list back path, and leaving Orders clears retained detail state.                              |
 | New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                             |
 | Order list and filters | Partial               | Draft and Pending filters work; order/customer search does not filter the list.                                                                                 |
 | Order details          | Partial               | Customer, items, payment, and timeline render, but staff cannot confirm, cancel, pay, fulfill, or return an order.                                              |
@@ -28,7 +28,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 
 - [x] **STAFF-01 — Fix sign-in form/autofill synchronization.** The apparent `staff@example.com` value was the placeholder while React Hook Form correctly held an empty string. The field now says `Enter your email`, while `autoComplete` and `textContentType` continue to synchronize genuine native autofill through `onChangeText`.
 - [x] **STAFF-02 — Make dashboard data live.** Date and greeting are derived at render time, the staff name comes from MMKV, and one TanStack Query dashboard request supplies pending orders, today's fulfilled sales, and recent activity.
-- [ ] **STAFF-03 — Reset Orders navigation correctly.** Dashboard `View all` must always open the order list; selecting a recent activity must open only that order and allow returning to the list.
+- [x] **STAFF-03 — Reset Orders navigation correctly.** Dashboard destinations now target nested screens explicitly, activity links preserve the nested stack's initial list route, and the Orders tab uses `popToTopOnBlur`.
 - [ ] **STAFF-04 — Implement order search.** Filter by order number and customer name without breaking status filters.
 - [ ] **STAFF-05 — Add staff order workflow actions.** Expose only valid confirm, cancel, payment, fulfillment, and return actions for the current backend state.
 - [ ] **STAFF-06 — Add product and variant details.** Product rows must open an actionable view of variants, SKU, price, and stock.

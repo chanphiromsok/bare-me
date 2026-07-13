@@ -39,6 +39,7 @@ const OperationTabs = createBottomTabNavigator({
     Orders: {
       screen: OrdersStack,
       options: {
+        popToTopOnBlur: true,
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="operation" color={color} size={size} />
         ),

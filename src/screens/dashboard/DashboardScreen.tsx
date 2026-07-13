@@ -276,7 +276,9 @@ export default function DashboardScreen() {
           <DashboardHeader
             dashboard={dashboardQuery.data}
             onNavigate={(route) => rootNavigation?.navigate(route)}
-            onViewAll={() => navigation.navigate("Orders")}
+            onViewAll={() =>
+              navigation.navigate("Orders", { screen: "OrderList" })
+            }
           />
         }
         ListEmptyComponent={
@@ -292,6 +294,7 @@ export default function DashboardScreen() {
             {...props}
             onPress={(orderId) =>
               navigation.navigate("Orders", {
+                initial: false,
                 params: { orderId },
                 screen: "OrderDetail",
               })
