@@ -4,9 +4,9 @@ import AppIcon from "../components/icons/AppIcon";
 import CustomersScreen from "../screens/customers/CustomersScreen";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import MoreScreen from "../screens/more/MoreScreen";
-import ProductsScreen from "../screens/products/ProductsScreen";
 import { colors } from "../theme";
 import OrdersStack from "./ordersStack";
+import ProductsStack from "./productsStack";
 
 const OperationTabs = createBottomTabNavigator({
   screenOptions: {
@@ -46,8 +46,9 @@ const OperationTabs = createBottomTabNavigator({
       },
     },
     Products: {
-      screen: ProductsScreen,
+      screen: ProductsStack,
       options: {
+        popToTopOnBlur: true,
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="parcel" color={color} size={size} />
         ),

@@ -16,7 +16,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 | New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                             |
 | Order list and filters | Passed after STAFF-04 | Status filters compose with a controlled order-number/customer-name search.                                                                                     |
 | Order details          | Passed after STAFF-05 | Customer, items, payment, timeline, and state-valid confirm, cancel, cash-payment, and fulfillment actions work. Returns remain a separate domain task.         |
-| Product list           | Partial               | API data and search work. Product rows have a disclosure arrow but do not open product or variant details.                                                      |
+| Product list           | Passed after STAFF-06 | API data and search work. Product rows open a variant view with SKU, size, color, price, active state, and current stock.                                       |
 | Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                        |
 | Add product            | Needs follow-up       | Required-field validation works. Completing every field reliably could not be verified because focus moved inconsistently between form inputs during device QA. |
 | Customer list          | Partial               | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view.                                   |
@@ -31,7 +31,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 - [x] **STAFF-03 — Reset Orders navigation correctly.** Dashboard destinations now target nested screens explicitly, activity links preserve the nested stack's initial list route, and the Orders tab uses `popToTopOnBlur`.
 - [x] **STAFF-04 — Implement order search.** The controlled search now filters the API-backed list by order number or customer name after applying the selected Jotai status filter.
 - [x] **STAFF-05 — Add staff order workflow actions.** Draft orders can be confirmed or cancelled; pending orders can be paid, fulfilled after full payment, or cancelled. Mutations refresh all operation queries.
-- [ ] **STAFF-06 — Add product and variant details.** Product rows must open an actionable view of variants, SKU, price, and stock.
+- [x] **STAFF-06 — Add product and variant details.** Products now use a nested stack and API-backed detail query; each row opens the product description and its SKU, size, color, price, active state, and stock per variant.
 - [ ] **STAFF-07 — Verify and harden Add Product input focus.** Each labeled field must retain its own value while moving through the form with the keyboard open.
 - [ ] **STAFF-08 — Add customer profile/history details.** Customer rows must open contact information and order history.
 - [ ] **STAFF-09 — Implement or clearly disable More destinations.** Remove deceptive disclosure affordances until inventory movements, approvals, settings, staff management, and support routes work; replace the hard-coded approval count with API data.
