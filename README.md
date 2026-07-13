@@ -2,6 +2,43 @@
 
 Bare is an Expo React Native app with native `ios/` and `android/` projects committed. It uses React Navigation, Uniwind/Tailwind-style classes, Lingui for translations, TanStack Query for server state, and Hey API for generated API clients.
 
+## Staff Acceptance Review — 2026-07-14
+
+The staff app was reviewed end to end against the local Phoenix API on an iPhone 17 Pro simulator (iOS 26.2). The review used Expo 57.0.4, React Native 0.86.0, Metro on port 8081, and the seeded `staff@example.com` account.
+
+### Coverage
+
+| Area | Result | Notes |
+| --- | --- | --- |
+| Authentication | Failed | Sign-out works, but the visually autofilled email is not synchronized with the form value, so the next sign-in submits an empty email. |
+| Dashboard | Failed | Date, pending-order count, sales total, and staff greeting are hard-coded. Recent activity can show empty while orders exist. |
+| Dashboard navigation | Failed | `View all` can reopen a retained order detail and leave the Orders tab stuck on that detail. |
+| New order | Passed | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288. |
+| Order list and filters | Partial | Draft and Pending filters work; order/customer search does not filter the list. |
+| Order details | Partial | Customer, items, payment, and timeline render, but staff cannot confirm, cancel, pay, fulfill, or return an order. |
+| Product list | Partial | API data and search work. Product rows have a disclosure arrow but do not open product or variant details. |
+| Restock | Passed | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9. |
+| Add product | Needs follow-up | Required-field validation works. Completing every field reliably could not be verified because focus moved inconsistently between form inputs during device QA. |
+| Customer list | Partial | API data, search, validation, and customer creation submit work. Customer rows do not open the promised profile/history view. |
+| More | Failed | Inventory movements, customer approvals, settings, and help rows look interactive but perform no action. The approval count is hard-coded. |
+| Static checks | Failed | `yarn lint` passes. `yarn typecheck` fails in obsolete Petstore hooks, `ExploreScreen`, and `HomeBanner`. |
+| Phoenix API | Passed baseline | `mix test` passes with 49 tests. No server failure was observed during sale, customer, product, or restock requests. |
+
+### Confirmed Tasks
+
+- [ ] **STAFF-01 — Fix sign-in form/autofill synchronization.** A displayed email must be the value submitted by React Hook Form, including after sign-out and app relaunch.
+- [ ] **STAFF-02 — Make dashboard data live.** Derive the date and greeting at runtime and load pending-order, daily-sales, and recent-activity values from the API.
+- [ ] **STAFF-03 — Reset Orders navigation correctly.** Dashboard `View all` must always open the order list; selecting a recent activity must open only that order and allow returning to the list.
+- [ ] **STAFF-04 — Implement order search.** Filter by order number and customer name without breaking status filters.
+- [ ] **STAFF-05 — Add staff order workflow actions.** Expose only valid confirm, cancel, payment, fulfillment, and return actions for the current backend state.
+- [ ] **STAFF-06 — Add product and variant details.** Product rows must open an actionable view of variants, SKU, price, and stock.
+- [ ] **STAFF-07 — Verify and harden Add Product input focus.** Each labeled field must retain its own value while moving through the form with the keyboard open.
+- [ ] **STAFF-08 — Add customer profile/history details.** Customer rows must open contact information and order history.
+- [ ] **STAFF-09 — Implement or clearly disable More destinations.** Remove deceptive disclosure affordances until inventory movements, approvals, settings, staff management, and support routes work; replace the hard-coded approval count with API data.
+- [ ] **STAFF-10 — Restore a clean TypeScript check.** Remove obsolete Petstore example hooks and fix the `ExploreScreen` and `HomeBanner` errors.
+
+This checklist is the implementation queue. Complete and verify one task per commit so regressions and backend/mobile changes remain reviewable.
+
 ## Requirements
 
 - Node.js compatible with the Expo SDK used by this repo.
