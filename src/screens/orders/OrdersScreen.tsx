@@ -5,7 +5,7 @@ import {
 import { useAtom } from "jotai";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import AppIcon from "../../components/icons/AppIcon";
@@ -33,6 +33,7 @@ const filters: { label: string; value: OrderFilter }[] = [
   { label: "Draft", value: "draft" },
   { label: "Pending", value: "pending" },
   { label: "Fulfilled", value: "fulfilled" },
+  { label: "Returned", value: "returned" },
   { label: "Cancelled", value: "cancelled" },
 ];
 
@@ -62,7 +63,13 @@ function OrderCard({ item: order, onPress }: OrderCardProps) {
         </View>
         <StatusPill
           label={order.status}
-          tone={order.status === "Fulfilled" ? "success" : "warning"}
+          tone={
+            order.status === "Fulfilled"
+              ? "success"
+              : order.status === "Returned" || order.status === "Cancelled"
+                ? "neutral"
+                : "warning"
+          }
         />
       </View>
       <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
@@ -80,7 +87,7 @@ export default function OrdersScreen() {
   const [filter, setFilter] = useAtom(orderFilterAtom);
   const [search, setSearch] = useState("");
   const ordersQuery = useOrderListQuery(filter);
-  const orders = useMemo(() => {
+  const orders = (() => {
     const term = search.trim().toLowerCase();
     if (!term) return ordersQuery.data ?? [];
 
@@ -89,7 +96,7 @@ export default function OrdersScreen() {
         order.number.toLowerCase().includes(term) ||
         order.customer.toLowerCase().includes(term),
     );
-  }, [ordersQuery.data, search]);
+  })();
 
   const emptyState = ordersQuery.isPending ? (
     <View className="rounded-2xl border border-border bg-surface p-6">

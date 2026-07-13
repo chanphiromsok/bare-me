@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   patchApiOrdersByIdCancel,
   patchApiOrdersByIdFulfill,
+  patchApiOrdersByIdReturn,
   patchApiOrdersByIdSubmit,
   postApiOrdersByOrderIdPayments,
 } from "../generated/sdk.gen";
@@ -64,6 +65,20 @@ export function useOrderWorkflowMutations(orderId: string) {
       }),
     onSuccess: refreshOrders,
   });
+  const returnOrder = useMutation({
+    mutationFn: (reason: string) =>
+      patchApiOrdersByIdReturn({
+        body: {
+          data: {
+            attributes: { return_reason: reason },
+            id: orderId,
+            type: "order",
+          },
+        },
+        path: { id: orderId },
+      }),
+    onSuccess: refreshOrders,
+  });
 
-  return { cancel, fulfill, recordPayment, submit };
+  return { cancel, fulfill, recordPayment, returnOrder, submit };
 }

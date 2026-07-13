@@ -12,7 +12,7 @@ export type Order = {
   id: string;
   items: string;
   number: string;
-  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending";
+  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending" | "Returned";
   total: string;
 };
 

@@ -35,7 +35,9 @@ export type OrderDetail = {
     voided: boolean;
   }[];
   placedAt?: string;
-  status: "cancelled" | "draft" | "fulfilled" | "pending";
+  returnReason?: string;
+  returnedAt?: string;
+  status: "cancelled" | "draft" | "fulfilled" | "pending" | "returned";
   subtotalCents: number;
   totalCents: number;
 };
@@ -145,6 +147,8 @@ export function useOrderDetailQuery(orderId: string) {
             : "unpaid",
         payments,
         placedAt: optionalString(attributes.placed_at),
+        returnReason: optionalString(attributes.return_reason),
+        returnedAt: optionalString(attributes.returned_at),
         status: attributes.status,
         subtotalCents: attributes.subtotal_cents,
         totalCents,

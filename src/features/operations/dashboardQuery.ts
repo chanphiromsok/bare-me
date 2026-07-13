@@ -10,7 +10,7 @@ export type DashboardActivity = {
   detail: string;
   id: string;
   orderId: string;
-  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending";
+  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending" | "Returned";
   title: string;
 };
 

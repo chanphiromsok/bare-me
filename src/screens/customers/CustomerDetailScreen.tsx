@@ -48,7 +48,7 @@ function OrderCard({ item }: LegendListRenderItemProps<CustomerOrder>) {
         tone={
           item.status === "Fulfilled"
             ? "success"
-            : item.status === "Cancelled"
+            : item.status === "Cancelled" || item.status === "Returned"
               ? "neutral"
               : "warning"
         }

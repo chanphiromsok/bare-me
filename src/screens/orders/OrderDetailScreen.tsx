@@ -45,6 +45,7 @@ function formatDate(value?: string) {
 function statusTone(status: OrderDetail["status"]) {
   if (status === "fulfilled") return "success" as const;
   if (status === "cancelled") return "danger" as const;
+  if (status === "returned") return "neutral" as const;
   if (status === "draft") return "neutral" as const;
   return "warning" as const;
 }
@@ -119,17 +120,24 @@ export default function OrderDetailScreen() {
     workflow.cancel.isPending ||
     workflow.fulfill.isPending ||
     workflow.recordPayment.isPending ||
+    workflow.returnOrder.isPending ||
     workflow.submit.isPending;
   const workflowError =
     workflow.cancel.isError ||
     workflow.fulfill.isError ||
     workflow.recordPayment.isError ||
+    workflow.returnOrder.isError ||
     workflow.submit.isError;
   const paidCents =
     order?.payments
       .filter((payment) => !payment.voided)
       .reduce((total, payment) => total + payment.amountCents, 0) ?? 0;
   const balanceCents = Math.max((order?.totalCents ?? 0) - paidCents, 0);
+  const paymentMethods =
+    order?.payments.reduce<string[]>((methods, payment) => {
+      if (!payment.voided) methods.push(payment.method.replace("_", " "));
+      return methods;
+    }, []) ?? [];
 
   const confirmCancel = () => {
     Alert.alert(
@@ -141,6 +149,21 @@ export default function OrderDetailScreen() {
           onPress: () => workflow.cancel.mutate("Cancelled by staff"),
           style: "destructive",
           text: "Cancel order",
+        },
+      ],
+    );
+  };
+
+  const confirmReturn = () => {
+    Alert.alert(
+      "Return this order?",
+      "All sold items will be added back to stock. Confirm the customer has returned every item before continuing.",
+      [
+        { style: "cancel", text: "Keep fulfilled" },
+        {
+          onPress: () => workflow.returnOrder.mutate("Full return by staff"),
+          style: "destructive",
+          text: "Return all items",
         },
       ],
     );
@@ -229,11 +252,8 @@ export default function OrderDetailScreen() {
                   </View>
                   <Text className="text-xs font-semibold uppercase text-success">
                     {order.paymentState.replace("_", " ")}
-                    {order.payments.length > 0
-                      ? ` · ${order.payments
-                          .filter((payment) => !payment.voided)
-                          .map((payment) => payment.method.replace("_", " "))
-                          .join(", ")}`
+                    {paymentMethods.length > 0
+                      ? ` · ${paymentMethods.join(", ")}`
                       : ""}
                   </Text>
                 </View>
@@ -251,6 +271,12 @@ export default function OrderDetailScreen() {
                 {order.cancelReason ? (
                   <Text className="mt-2 text-sm text-danger">
                     Cancelled · {order.cancelReason}
+                  </Text>
+                ) : null}
+                {order.returnedAt ? (
+                  <Text className="mt-2 text-sm text-muted">
+                    Returned · {formatDate(order.returnedAt)}
+                    {order.returnReason ? ` · ${order.returnReason}` : ""}
                   </Text>
                 ) : null}
               </View>
@@ -298,6 +324,33 @@ export default function OrderDetailScreen() {
                       </Text>
                     ) : null}
                   </View>
+                </View>
+              ) : null}
+              {order.status === "fulfilled" ? (
+                <View className="rounded-2xl border border-border bg-surface p-4">
+                  <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+                    Return
+                  </Text>
+                  <Text className="mt-2 text-sm leading-5 text-muted">
+                    Full returns restore every item to stock and cannot be
+                    reversed.
+                  </Text>
+                  <View className="mt-4">
+                    <ActionButton
+                      disabled={workflowPending}
+                      label="Return all items"
+                      onPress={confirmReturn}
+                      tone="danger"
+                    />
+                  </View>
+                  {workflowError ? (
+                    <Text
+                      accessibilityRole="alert"
+                      className="mt-3 text-sm text-danger"
+                    >
+                      The return could not be recorded. Refresh and try again.
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
             </View>

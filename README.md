@@ -15,7 +15,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 | Dashboard navigation   | Passed after STAFF-03 | `View all` targets the order list, activity deep links preserve a list back path, and leaving Orders clears retained detail state.                                      |
 | New order              | Passed                | A cash sale for an in-stock variant created fulfilled order `#8` and reduced stock from 289 to 288.                                                                     |
 | Order list and filters | Passed after STAFF-04 | Status filters compose with a controlled order-number/customer-name search.                                                                                             |
-| Order details          | Passed after STAFF-05 | Customer, items, payment, timeline, and state-valid confirm, cancel, cash-payment, and fulfillment actions work. Returns remain a separate domain task.                 |
+| Order details          | Passed after STAFF-11 | Customer, items, payment, timeline, and state-valid confirm, cancel, cash-payment, fulfillment, and full-return actions work.                                           |
 | Product list           | Passed after STAFF-06 | API data and search work. Product rows open a variant view with SKU, size, color, price, active state, and current stock.                                               |
 | Restock                | Passed                | Restocking `DEV-714-TEE` by 2 changed stock from 7 to 9.                                                                                                                |
 | Add product            | Passed after STAFF-07 | Required-field validation and creation work. Example-like placeholders are clearly labeled so empty inputs no longer look populated; native field focus was reverified. |
@@ -36,7 +36,7 @@ The staff app was reviewed end to end against the local Phoenix API on an iPhone
 - [x] **STAFF-08 — Add customer profile/history details.** Customers use a nested stack; each row opens contact information, confirmation state, and order history with links to order details.
 - [x] **STAFF-09 — Implement or clearly disable More destinations.** Unimplemented destinations are non-interactive and labeled unavailable; fabricated approval counts and misleading disclosure affordances were removed.
 - [x] **STAFF-10 — Restore a clean TypeScript check.** Obsolete Petstore/Explore template code was removed and the unused legacy carousel's incompatible gesture customization was dropped.
-- [ ] **STAFF-11 — Design returns and refunds.** The backend currently forbids cancelling fulfilled orders and has no return/refund resource. Define partial/full return, stock disposition, and refund rules before exposing this irreversible workflow.
+- [x] **STAFF-11 — Add auditable full-order returns.** Only fulfilled orders can transition to returned. The backend records the time/reason and creates referenced `return_restock` ledger entries for every line; the staff app exposes a destructive, confirmed full-return action and returned-order filter. Partial returns and payment-provider refunds remain future workflows.
 
 This checklist is the implementation queue. Complete and verify one task per commit so regressions and backend/mobile changes remain reviewable.
 

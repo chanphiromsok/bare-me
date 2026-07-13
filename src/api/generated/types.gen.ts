@@ -388,7 +388,7 @@ export type StockMovement = {
         /**
          * Field included by default.
          */
-        reason: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
+        reason: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
         /**
          * Field included by default.
          */
@@ -532,16 +532,16 @@ export type CustomerFilterCreatedByUserId = {
 export type ProductFilter = unknown;
 
 export type StockMovementFilterReason = {
-    eq?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
-    greater_than?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
-    greater_than_or_equal?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
+    eq?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
+    greater_than?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
+    greater_than_or_equal?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
     in?: Array<string>;
     is_distinct_from?: string;
     is_nil?: boolean;
     is_not_distinct_from?: string;
-    less_than?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
-    less_than_or_equal?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
-    not_eq?: 'restock' | 'sale' | 'cancellation_restock' | 'adjustment';
+    less_than?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
+    less_than_or_equal?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
+    not_eq?: 'restock' | 'sale' | 'cancellation_restock' | 'return_restock' | 'adjustment';
 };
 
 export type OrderFilterPaymentState = {
@@ -711,16 +711,16 @@ export type Customer = {
 };
 
 export type OrderFilterStatus = {
-    eq?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
-    greater_than?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
-    greater_than_or_equal?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
+    eq?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
+    greater_than?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
+    greater_than_or_equal?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
     in?: Array<string>;
     is_distinct_from?: string;
     is_nil?: boolean;
     is_not_distinct_from?: string;
-    less_than?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
-    less_than_or_equal?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
-    not_eq?: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
+    less_than?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
+    less_than_or_equal?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
+    not_eq?: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
 };
 
 export type UserFilterActive = {
@@ -777,7 +777,15 @@ export type Order = {
         /**
          * Field included by default.
          */
-        status: 'draft' | 'pending' | 'fulfilled' | 'cancelled';
+        return_reason?: string | null | unknown;
+        /**
+         * Field included by default.
+         */
+        returned_at?: unknown;
+        /**
+         * Field included by default.
+         */
+        status: 'draft' | 'pending' | 'fulfilled' | 'cancelled' | 'returned';
         /**
          * Field included by default.
          */
@@ -1046,6 +1054,24 @@ export type PaymentFilterMethod = {
     not_eq?: 'cash' | 'bank_transfer' | 'card_manual' | 'other';
 };
 
+export type OrderFilterReturnReason = {
+    contains?: string;
+    eq?: string;
+    greater_than?: string;
+    greater_than_or_equal?: string;
+    ilike?: string;
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: string;
+    less_than_or_equal?: string;
+    like?: string;
+    not_eq?: string;
+    string_ends_with?: string;
+    string_starts_with?: string;
+};
+
 export type OrderFilterFulfilledAt = {
     eq?: unknown;
     greater_than?: unknown;
@@ -1145,6 +1171,19 @@ export type OrderLineItemFilterQuantity = {
     less_than?: number;
     less_than_or_equal?: number;
     not_eq?: number;
+};
+
+export type OrderFilterReturnedAt = {
+    eq?: unknown;
+    greater_than?: unknown;
+    greater_than_or_equal?: unknown;
+    in?: Array<unknown>;
+    is_distinct_from?: unknown;
+    is_nil?: boolean;
+    is_not_distinct_from?: unknown;
+    less_than?: unknown;
+    less_than_or_equal?: unknown;
+    not_eq?: unknown;
 };
 
 /**
@@ -2154,6 +2193,68 @@ export type PatchApiOrdersByIdFulfillResponses = {
 };
 
 export type PatchApiOrdersByIdFulfillResponse = PatchApiOrdersByIdFulfillResponses[keyof PatchApiOrdersByIdFulfillResponses];
+
+export type PatchApiOrdersByIdReturnData = {
+    /**
+     * Request body for the /orders/:id/return operation on order resource
+     */
+    body?: {
+        data: {
+            attributes?: {
+                return_reason?: string | unknown;
+            };
+            id: string;
+            relationships?: {
+                [key: string]: never;
+            };
+            type?: 'order';
+        };
+    };
+    path: {
+        id: string;
+    };
+    query?: {
+        /**
+         * Relationship paths to include in the response
+         */
+        include?: string;
+        /**
+         * Limits the response fields to only those listed for each type
+         */
+        fields?: {
+            /**
+             * Comma separated field names for order
+             */
+            order?: string;
+            [key: string]: unknown;
+        };
+    };
+    url: '/api/orders/{id}/return';
+};
+
+export type PatchApiOrdersByIdReturnErrors = {
+    /**
+     * General Error
+     */
+    default: Errors;
+};
+
+export type PatchApiOrdersByIdReturnError = PatchApiOrdersByIdReturnErrors[keyof PatchApiOrdersByIdReturnErrors];
+
+export type PatchApiOrdersByIdReturnResponses = {
+    /**
+     * Success
+     */
+    200: {
+        data?: Order;
+        included?: Array<Customer | Payment | OrderLineItem | ProductVariant>;
+        meta?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PatchApiOrdersByIdReturnResponse = PatchApiOrdersByIdReturnResponses[keyof PatchApiOrdersByIdReturnResponses];
 
 export type PatchApiOrdersByIdSubmitData = {
     /**

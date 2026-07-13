@@ -22,7 +22,7 @@ export type CustomerSummary = {
 export type CustomerOrder = {
   id: string;
   number: string;
-  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending";
+  status: "Cancelled" | "Draft" | "Fulfilled" | "Pending" | "Returned";
   total: string;
 };
 
