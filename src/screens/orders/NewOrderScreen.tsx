@@ -184,6 +184,9 @@ function ProductRow({
   const maximumQuantity = isPreorder
     ? Number.POSITIVE_INFINITY
     : Math.max(item.stock, 0);
+  const availableQuantity = isPreorder
+    ? item.stock
+    : Math.max(item.stock - quantity, 0);
 
   return (
     <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
@@ -198,7 +201,7 @@ function ProductRow({
           {item.sku} · {item.size} · {item.color}
         </Text>
         <Text className="mt-1 text-sm font-semibold text-primary">
-          {formatCurrency(item.priceCents)} · {item.stock} available
+          {formatCurrency(item.priceCents)} · {availableQuantity} available
         </Text>
         {isPreorder ? (
           <Text className="mt-1 text-xs font-bold uppercase text-warning">
