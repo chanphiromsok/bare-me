@@ -1,9 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import type {
-  DashboardRange,
-  DashboardSalesPoint,
-} from "../../../features/operations/dashboardQuery";
+import type { DashboardSalesPoint } from "../../../features/operations/dashboardQuery";
 import { colors } from "../../../theme/colors";
 
 export default function SalesTrendChart({
@@ -13,7 +10,6 @@ export default function SalesTrendChart({
   accessibilityLabel: string;
   loading: boolean;
   points: DashboardSalesPoint[];
-  range: DashboardRange;
 }) {
   const maxValue = Math.max(...points.map((point) => point.value), 1);
 

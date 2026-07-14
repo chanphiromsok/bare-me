@@ -1,12 +1,9 @@
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { LiveChart, type LiveChartPoint } from "react-native-livechart";
-import { useSharedValue } from "react-native-reanimated";
+import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
-import type {
-  DashboardRange,
-  DashboardSalesPoint,
-} from "../../../features/operations/dashboardQuery";
+import type { DashboardSalesPoint } from "../../../features/operations/dashboardQuery";
 import { colors } from "../../../theme/colors";
 
 function formatSalesValue(value: number): string {
@@ -21,15 +18,18 @@ export default function SalesTrendChart({
   accessibilityLabel,
   loading,
   points,
-  range,
 }: {
   accessibilityLabel: string;
   loading: boolean;
   points: DashboardSalesPoint[];
-  range: DashboardRange;
 }) {
-  const data = useSharedValue<LiveChartPoint[]>([]);
-  const value = useSharedValue(0);
+  const data = useSharedValue<LiveChartPoint[]>(
+    points.map(({ time, value }) => ({ time, value })),
+  );
+  const value = useDerivedValue(() => {
+    const currentData = data.get();
+    return currentData.length ? currentData[currentData.length - 1].value : 0;
+  });
   const firstTime = points[0]?.time ?? 0;
   const lastTime = points.at(-1)?.time ?? firstTime + 1;
 
@@ -40,8 +40,7 @@ export default function SalesTrendChart({
         value: pointValue,
       })),
     );
-    value.set(points.at(-1)?.value ?? 0);
-  }, [data, points, value]);
+  }, [data, points]);
 
   return (
     <View style={styles.container}>
@@ -63,7 +62,6 @@ export default function SalesTrendChart({
         nowOverride={lastTime}
         pulse={false}
         scrub={false}
-        snapKey={range}
         static
         theme="light"
         timeWindow={Math.max(lastTime - firstTime, 1)}

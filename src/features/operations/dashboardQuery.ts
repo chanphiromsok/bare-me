@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { getApiOrders, getApiReceivables } from "../../api/generated/sdk.gen";
 import type {
@@ -37,6 +37,13 @@ export type DashboardSummary = {
   previousSalesCents: number;
   salesCents: number;
   salesPoints: DashboardSalesPoint[];
+};
+
+type DashboardSource = {
+  included: (ApiCustomer | unknown)[];
+  orders: ApiOrder[];
+  outstandingCents: number;
+  recentOrders: ApiOrder[];
 };
 
 const dashboardQueryKey = ["operations", "dashboard"] as const;
@@ -178,17 +185,58 @@ function buildSalesPoints(
   });
 }
 
-export function useDashboardQuery(range: DashboardRange) {
+function buildDashboardSummary(
+  source: DashboardSource,
+  range: DashboardRange,
+): DashboardSummary {
   const { days } = rangeConfig(range);
+  const today = startOfLocalDay(new Date());
+  const currentStart = addLocalDays(today, -(days - 1));
+  const previousStart = addLocalDays(currentStart, -days);
+  const fulfilledOrders = source.orders.filter(
+    (order) => order.attributes?.status === "fulfilled",
+  );
+  const currentOrders = fulfilledOrders.filter((order) => {
+    const fulfilledAt = dateFrom(order.attributes?.fulfilled_at);
+    return fulfilledAt ? fulfilledAt >= currentStart : false;
+  });
+  const previousOrders = fulfilledOrders.filter((order) => {
+    const fulfilledAt = dateFrom(order.attributes?.fulfilled_at);
+    return fulfilledAt
+      ? fulfilledAt >= previousStart && fulfilledAt < currentStart
+      : false;
+  });
+  const salesCents = currentOrders.reduce(
+    (total, order) => total + orderTotalCents(order),
+    0,
+  );
+  const previousSalesCents = previousOrders.reduce(
+    (total, order) => total + orderTotalCents(order),
+    0,
+  );
+  const pendingOrders = source.orders.filter(
+    (order) => order.attributes?.status === "pending",
+  ).length;
 
+  return {
+    activity: buildActivity(source.recentOrders, source.included),
+    averageOrderCents:
+      currentOrders.length === 0
+        ? 0
+        : Math.round(salesCents / currentOrders.length),
+    fulfilledOrders: currentOrders.length,
+    outstandingCents: source.outstandingCents,
+    pendingOrders,
+    previousSalesCents,
+    salesCents,
+    salesPoints: buildSalesPoints(currentOrders, currentStart, days),
+  };
+}
+
+export function useDashboardQuery(range: DashboardRange) {
   return useQuery({
-    placeholderData: keepPreviousData,
-    queryKey: [...dashboardQueryKey, range],
-    queryFn: async ({ signal }): Promise<DashboardSummary> => {
-      const today = startOfLocalDay(new Date());
-      const currentStart = addLocalDays(today, -(days - 1));
-      const previousStart = addLocalDays(currentStart, -days);
-
+    queryKey: dashboardQueryKey,
+    queryFn: async ({ signal }): Promise<DashboardSource> => {
       const [orders, recentResponse, receivableResponse] = await Promise.all([
         fetchAllOrders(signal),
         getApiOrders({
@@ -207,50 +255,15 @@ export function useDashboardQuery(range: DashboardRange) {
         }),
       ]);
 
-      const fulfilledOrders = orders.filter(
-        (order) => order.attributes?.status === "fulfilled",
-      );
-      const currentOrders = fulfilledOrders.filter((order) => {
-        const fulfilledAt = dateFrom(order.attributes?.fulfilled_at);
-        return fulfilledAt ? fulfilledAt >= currentStart : false;
-      });
-      const previousOrders = fulfilledOrders.filter((order) => {
-        const fulfilledAt = dateFrom(order.attributes?.fulfilled_at);
-        return fulfilledAt
-          ? fulfilledAt >= previousStart && fulfilledAt < currentStart
-          : false;
-      });
-      const salesCents = currentOrders.reduce(
-        (total, order) => total + orderTotalCents(order),
-        0,
-      );
-      const previousSalesCents = previousOrders.reduce(
-        (total, order) => total + orderTotalCents(order),
-        0,
-      );
-      const pendingOrders = orders.filter(
-        (order) => order.attributes?.status === "pending",
-      ).length;
-      const outstandingCents =
-        receivableResponse.data.data?.[0]?.attributes
-          ?.portfolio_balance_cents ?? 0;
-
       return {
-        activity: buildActivity(
-          recentResponse.data.data ?? [],
-          recentResponse.data.included ?? [],
-        ),
-        averageOrderCents:
-          currentOrders.length === 0
-            ? 0
-            : Math.round(salesCents / currentOrders.length),
-        fulfilledOrders: currentOrders.length,
-        outstandingCents,
-        pendingOrders,
-        previousSalesCents,
-        salesCents,
-        salesPoints: buildSalesPoints(currentOrders, currentStart, days),
+        included: recentResponse.data.included ?? [],
+        orders,
+        outstandingCents:
+          receivableResponse.data.data?.[0]?.attributes
+            ?.portfolio_balance_cents ?? 0,
+        recentOrders: recentResponse.data.data ?? [],
       };
     },
+    select: (source) => buildDashboardSummary(source, range),
   });
 }

@@ -247,7 +247,6 @@ function SalesCard({
           accessibilityLabel={totalLabel}
           loading={loading}
           points={points}
-          range={range}
         />
       </View>
       <View className="mt-1 flex-row justify-between">
