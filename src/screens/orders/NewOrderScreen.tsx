@@ -1,9 +1,10 @@
 import {
   LegendList,
+  type LegendListRef,
   type LegendListRenderItemProps,
 } from "@legendapp/list/react-native";
-import { useNavigation } from "@react-navigation/native";
-import { useReducer, useState } from "react";
+import { type RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useReducer, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { PosVariant } from "../../api/pos/queries";
@@ -17,7 +18,18 @@ import {
 } from "../../api/pos/usePosCheckoutMutation";
 import AppIcon from "../../components/icons/AppIcon";
 import SearchField from "../../components/operations/SearchField";
+import LiveTutorialOverlay from "../../features/tutorial/LiveTutorialOverlay";
+import {
+  findStaffTutorial,
+  type StaffTutorialId,
+} from "../../features/tutorial/staffTutorials";
+import { useLiveTutorialController } from "../../features/tutorial/useLiveTutorialController";
 import { colors } from "../../theme/colors";
+
+type NewOrderRoute = RouteProp<
+  { NewOrder: { tutorialId?: StaffTutorialId } | undefined },
+  "NewOrder"
+>;
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
@@ -223,8 +235,57 @@ function ProductRow({
   );
 }
 
+function OrderScreenHeader({
+  itemCount,
+  onBack,
+  saleType,
+  tutorialMode,
+}: {
+  itemCount: number;
+  onBack: () => void;
+  saleType: "preorder" | "sale";
+  tutorialMode: boolean;
+}) {
+  return (
+    <View className="flex-row items-center gap-3 px-5 pb-4 pt-3">
+      <Pressable
+        accessibilityLabel="Back to orders"
+        accessibilityRole="button"
+        className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:bg-surface-muted"
+        onPress={onBack}
+      >
+        <Text className="text-2xl text-primary">‹</Text>
+      </Pressable>
+      <View className="flex-1">
+        <Text className="text-2xl font-bold text-foreground">
+          {saleType === "preorder" ? "New preorder" : "New sale"}
+        </Text>
+        <Text className="text-sm text-muted">
+          {tutorialMode
+            ? "Practice guide · Nothing will be saved"
+            : saleType === "preorder"
+              ? "Customer, items, and expected total"
+              : "Customer, items, and payment"}
+        </Text>
+      </View>
+      <View className="rounded-full bg-primary-soft px-3 py-2">
+        <Text className="text-sm font-bold text-primary">
+          {itemCount} {itemCount === 1 ? "item" : "items"}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function NewOrderScreen() {
   const navigation = useNavigation();
+  const route = useRoute<NewOrderRoute>();
+  const listRef = useRef<LegendListRef | null>(null);
+  const tutorial = route.params?.tutorialId
+    ? findStaffTutorial(route.params.tutorialId)
+    : null;
+  const tutorialMode =
+    tutorial?.id === "sale-order" || tutorial?.id === "preorder";
   const customersQuery = usePosCustomersQuery();
   const catalogQuery = usePosCatalogQuery();
   const checkoutMutation = usePosCheckoutMutation();
@@ -233,8 +294,26 @@ export default function NewOrderScreen() {
   const [search, setSearch] = useState("");
   const [{ quantities, saleType }, dispatchSelection] = useReducer(
     orderSelectionReducer,
-    { quantities: {}, saleType: "sale" },
+    {
+      quantities: {},
+      saleType: tutorial?.id === "preorder" ? "preorder" : "sale",
+    },
   );
+  const { showStep: showTutorialStep, startOnLayout, tour } =
+    useLiveTutorialController({
+      enabled: tutorialMode,
+      onBeforeStep: (index) => {
+        if (index < 2) {
+          void listRef.current?.scrollToOffset({ animated: true, offset: 0 });
+        } else if (index === 2) {
+          void listRef.current?.scrollToOffset({
+            animated: true,
+            offset: 180,
+          });
+        }
+      },
+      steps: tutorial?.steps ?? [],
+    });
 
   const variants = (() => {
     const query = search.trim().toLowerCase();
@@ -260,7 +339,10 @@ export default function NewOrderScreen() {
     0,
   );
   const canCheckout =
-    Boolean(selectedCustomerId) && itemCount > 0 && !checkoutMutation.isPending;
+    !tutorialMode &&
+    Boolean(selectedCustomerId) &&
+    itemCount > 0 &&
+    !checkoutMutation.isPending;
 
   const changeQuantity = (variantId: string, nextQuantity: number) => {
     dispatchSelection({
@@ -275,6 +357,7 @@ export default function NewOrderScreen() {
   };
 
   const handleCheckout = async () => {
+    if (tutorialMode) return;
     if (!selectedCustomerId || itemCount === 0) return;
 
     try {
@@ -295,32 +378,16 @@ export default function NewOrderScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background pt-safe">
-      <View className="flex-row items-center gap-3 px-5 pb-4 pt-3">
-        <Pressable
-          accessibilityLabel="Back to orders"
-          accessibilityRole="button"
-          className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:bg-surface-muted"
-          onPress={() => navigation.goBack()}
-        >
-          <Text className="text-2xl text-primary">‹</Text>
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-2xl font-bold text-foreground">
-            {saleType === "preorder" ? "New preorder" : "New sale"}
-          </Text>
-          <Text className="text-sm text-muted">
-            {saleType === "preorder"
-              ? "Customer, items, and expected total"
-              : "Customer, items, and payment"}
-          </Text>
-        </View>
-        <View className="rounded-full bg-primary-soft px-3 py-2">
-          <Text className="text-sm font-bold text-primary">
-            {itemCount} {itemCount === 1 ? "item" : "items"}
-          </Text>
-        </View>
-      </View>
+    <View
+      className="flex-1 bg-background pt-safe"
+      onLayout={startOnLayout}
+    >
+      <OrderScreenHeader
+        itemCount={itemCount}
+        onBack={() => navigation.goBack()}
+        saleType={saleType}
+        tutorialMode={tutorialMode}
+      />
 
       <LegendList
         contentContainerStyle={{ paddingBottom: 224, paddingHorizontal: 20 }}
@@ -341,8 +408,18 @@ export default function NewOrderScreen() {
         }
         ListHeaderComponent={
           <View className="mb-4 gap-4">
-            <OrderTypeSelector onChange={changeSaleType} value={saleType} />
-            <View>
+            <View
+              {...(tutorialMode
+                ? tour.getTargetProps("order-type")
+                : undefined)}
+            >
+              <OrderTypeSelector onChange={changeSaleType} value={saleType} />
+            </View>
+            <View
+              {...(tutorialMode
+                ? tour.getTargetProps("order-customer")
+                : undefined)}
+            >
               <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
                 1 · Customer
               </Text>
@@ -393,7 +470,11 @@ export default function NewOrderScreen() {
               ) : null}
             </View>
 
-            <View>
+            <View
+              {...(tutorialMode
+                ? tour.getTargetProps("order-products")
+                : undefined)}
+            >
               <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
                 2 · Products
               </Text>
@@ -406,6 +487,7 @@ export default function NewOrderScreen() {
           </View>
         }
         maintainVisibleContentPosition
+        ref={listRef}
         recycleItems
         renderItem={(props) => (
           <ProductRow
@@ -418,7 +500,12 @@ export default function NewOrderScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4">
+      <View
+        {...(tutorialMode
+          ? tour.getTargetProps("order-complete")
+          : undefined)}
+        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4"
+      >
         {saleType === "sale" ? (
           <PaymentSelector onChange={setPaymentMethod} value={paymentMethod} />
         ) : (
@@ -440,7 +527,9 @@ export default function NewOrderScreen() {
         >
           <View>
             <Text className="text-xs font-semibold text-primary-soft">
-              {checkoutMutation.isPending
+              {tutorialMode
+                ? "Practice only"
+                : checkoutMutation.isPending
                 ? saleType === "preorder"
                   ? "Confirming preorder…"
                   : "Completing sale…"
@@ -449,16 +538,25 @@ export default function NewOrderScreen() {
                   : "Complete sale"}
             </Text>
             <Text className="text-base font-bold text-on-primary">
-              {selectedCustomerId
+              {tutorialMode
+                ? "No order will be created"
+                : selectedCustomerId
                 ? `${itemCount} ${itemCount === 1 ? "item" : "items"}`
                 : "Select a customer"}
             </Text>
           </View>
           <Text className="text-xl font-bold text-on-primary">
-            {formatCurrency(totalCents)}
+            {tutorialMode ? "DEMO" : formatCurrency(totalCents)}
           </Text>
         </Pressable>
       </View>
+      {tutorialMode ? (
+        <LiveTutorialOverlay
+          onClose={() => navigation.goBack()}
+          onStepChange={showTutorialStep}
+          tour={tour}
+        />
+      ) : null}
     </View>
   );
 }

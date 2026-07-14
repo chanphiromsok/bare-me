@@ -6,6 +6,8 @@ import {
   useNavigation,
   type NavigationProp,
   type ParamListBase,
+  type RouteProp,
+  useRoute,
 } from "@react-navigation/native";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -24,6 +26,17 @@ import { type PosVariant, usePosCatalogQuery } from "../../api/pos/queries";
 import TextController from "../../components/form/TextController";
 import SearchField from "../../components/operations/SearchField";
 import TaskHeader from "../../components/operations/TaskHeader";
+import LiveTutorialOverlay from "../../features/tutorial/LiveTutorialOverlay";
+import {
+  findStaffTutorial,
+  type StaffTutorialId,
+} from "../../features/tutorial/staffTutorials";
+import { useLiveTutorialController } from "../../features/tutorial/useLiveTutorialController";
+
+type RestockRoute = RouteProp<
+  { Restock: { tutorialId?: StaffTutorialId } | undefined },
+  "Restock"
+>;
 
 type RestockFormValues = {
   note: string;
@@ -32,6 +45,17 @@ type RestockFormValues = {
 
 export default function RestockScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route = useRoute<RestockRoute>();
+  const tutorial = route.params?.tutorialId
+    ? findStaffTutorial(route.params.tutorialId)
+    : null;
+  const tutorialMode = tutorial?.id === "restock";
+  const { showStep: showTutorialStep, startOnLayout, tour } =
+    useLiveTutorialController({
+      enabled: tutorialMode,
+      highlightDelay: 350,
+      steps: tutorial?.steps ?? [],
+    });
   const catalogQuery = usePosCatalogQuery();
   const restock = useRestockMutation();
   const [search, setSearch] = useState("");
@@ -56,6 +80,7 @@ export default function RestockScreen() {
     null;
 
   const submit = handleSubmit(async (values) => {
+    if (tutorialMode) return;
     if (!selectedVariant) return;
 
     try {
@@ -105,37 +130,55 @@ export default function RestockScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-background"
+      onLayout={startOnLayout}
     >
       <TaskHeader
         onBack={() => navigation.goBack()}
-        subtitle="Choose a variant and enter the quantity received."
+        subtitle={
+          tutorialMode
+            ? "Practice guide · Inventory will not change"
+            : "Choose a variant and enter the quantity received."
+        }
         title="Restock inventory"
       />
       <View className="flex-1 px-5 pt-4">
-        <SearchField
-          onChangeText={setSearch}
-          placeholder="Search SKU or product"
-          value={search}
-        />
-        <LegendList
-          contentContainerStyle={{ paddingBottom: 16, paddingTop: 16 }}
-          data={variants}
-          estimatedItemSize={86}
-          ItemSeparatorComponent={() => <View className="h-3" />}
-          keyExtractor={(item) => item.id}
-          ListEmptyComponent={
-            <Text className="py-8 text-center text-sm text-muted">
-              {catalogQuery.isPending
-                ? "Loading variants…"
-                : catalogQuery.isError
-                  ? "Variants could not be loaded."
-                  : "No variants match your search."}
-            </Text>
-          }
-          recycleItems
-          renderItem={renderVariant}
-          showsVerticalScrollIndicator={false}
-        />
+        <View
+          {...(tutorialMode
+            ? tour.getTargetProps("restock-search")
+            : undefined)}
+        >
+          <SearchField
+            onChangeText={setSearch}
+            placeholder="Search SKU or product"
+            value={search}
+          />
+        </View>
+        <View
+          {...(tutorialMode
+            ? tour.getTargetProps("restock-variants")
+            : undefined)}
+          className="flex-1"
+        >
+          <LegendList
+            contentContainerStyle={{ paddingBottom: 16, paddingTop: 16 }}
+            data={variants}
+            estimatedItemSize={86}
+            ItemSeparatorComponent={() => <View className="h-3" />}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={
+              <Text className="py-8 text-center text-sm text-muted">
+                {catalogQuery.isPending
+                  ? "Loading variants…"
+                  : catalogQuery.isError
+                    ? "Variants could not be loaded."
+                    : "No variants match your search."}
+              </Text>
+            }
+            recycleItems
+            renderItem={renderVariant}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       </View>
       <View className="gap-4 border-t border-border bg-surface px-5 pb-safe-offset-5 pt-4">
         <Text className="font-bold text-foreground">
@@ -143,7 +186,12 @@ export default function RestockScreen() {
             ? `Receiving ${selectedVariant.sku}`
             : "Select a variant above"}
         </Text>
-        <View className="flex-row gap-3">
+        <View
+          {...(tutorialMode
+            ? tour.getTargetProps("restock-quantity")
+            : undefined)}
+          className="flex-row gap-3"
+        >
           <TextController
             control={control}
             keyboardType="number-pad"
@@ -178,16 +226,30 @@ export default function RestockScreen() {
           </Text>
         ) : null}
         <Pressable
+          {...(tutorialMode
+            ? tour.getTargetProps("restock-confirm")
+            : undefined)}
           accessibilityRole="button"
           className="min-h-13 items-center justify-center rounded-xl bg-primary active:bg-primary-pressed disabled:opacity-40"
-          disabled={!selectedVariant || restock.isPending}
+          disabled={tutorialMode || !selectedVariant || restock.isPending}
           onPress={submit}
         >
           <Text className="font-bold text-on-primary">
-            {restock.isPending ? "Updating stock…" : "Confirm restock"}
+            {tutorialMode
+              ? "Practice only · Stock will not change"
+              : restock.isPending
+                ? "Updating stock…"
+                : "Confirm restock"}
           </Text>
         </Pressable>
       </View>
+      {tutorialMode ? (
+        <LiveTutorialOverlay
+          onClose={() => navigation.goBack()}
+          onStepChange={showTutorialStep}
+          tour={tour}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }

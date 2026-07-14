@@ -3,8 +3,8 @@ import type { AppIconName } from "../../components/icons/AppIcon";
 export type StaffTutorialId =
   | "sale-order"
   | "preorder"
-  | "restock"
-  | "cancel-return";
+  | "new-product"
+  | "restock";
 
 export type StaffTutorialStep = {
   description: string;
@@ -30,28 +30,28 @@ export const staffTutorials: StaffTutorial[] = [
     duration: "About 2 min",
     steps: [
       {
-        id: "sale-customer",
+        id: "order-type",
+        title: "Use an in-stock sale",
+        description:
+          "This is the real order type control. Keep In-stock sale selected when the products are already available.",
+      },
+      {
+        id: "order-customer",
         title: "Choose the customer",
         description:
-          "Open New order and select the customer. Add them first if they are not in the list.",
+          "Select the customer who is buying. If they are missing, leave this screen and create the customer first.",
       },
       {
-        id: "sale-type",
-        title: "Keep Sale selected",
-        description:
-          "Use Sale for items already in stock. The app checks available quantity before confirming.",
-      },
-      {
-        id: "sale-products",
+        id: "order-products",
         title: "Add product variants",
         description:
-          "Search for each variant, add it to the cart, and check the quantity and total.",
+          "Search the real catalog, then use the plus button on the correct size and color. Check available stock and quantity.",
       },
       {
-        id: "sale-confirm",
-        title: "Choose payment and confirm",
+        id: "order-complete",
+        title: "Review payment and complete",
         description:
-          "Select the payment method, review the order once more, then confirm. Fulfilled sales deduct stock.",
+          "Choose the payment method and review the item count and total. In normal mode, Complete sale creates the order and deducts stock. It is disabled in this guide.",
       },
     ],
   },
@@ -63,28 +63,61 @@ export const staffTutorials: StaffTutorial[] = [
     duration: "About 3 min",
     steps: [
       {
-        id: "preorder-customer",
+        id: "order-type",
+        title: "Use Preorder",
+        description:
+          "This real order screen starts with Preorder selected. Use it for chat requests even when stock is zero.",
+      },
+      {
+        id: "order-customer",
         title: "Choose the customer",
         description:
-          "Start a new order and select the customer who requested the product through chat.",
+          "Select the customer who requested the products so staff can follow up when stock arrives.",
       },
       {
-        id: "preorder-type",
-        title: "Select Preorder",
-        description:
-          "Preorder allows staff to record demand even when the on-hand quantity is zero.",
-      },
-      {
-        id: "preorder-products",
+        id: "order-products",
         title: "Add requested variants",
         description:
-          "Add the exact variants and quantities, check the expected total, then confirm the preorder.",
+          "Search the catalog and add the exact size, color, and quantity requested. Preorders can exceed current stock.",
       },
       {
-        id: "preorder-fulfill",
-        title: "Allocate and fulfill later",
+        id: "order-complete",
+        title: "Review and confirm later",
         description:
-          "After stock arrives, allocate it, record payment, and complete pickup or delivery. Stock is deducted when fulfilled.",
+          "In normal mode, confirm the expected total here. When stock arrives, open the order to allocate, record payment, and fulfill it. This guide creates nothing.",
+      },
+    ],
+  },
+  {
+    id: "new-product",
+    icon: "parcel",
+    title: "Create a product",
+    summary: "Learn the real product and first-variant form.",
+    duration: "About 2 min",
+    steps: [
+      {
+        id: "product-details",
+        title: "Describe the product",
+        description:
+          "Enter the product name first. Category and description help staff find and understand the product later.",
+      },
+      {
+        id: "product-variant",
+        title: "Create the first variant",
+        description:
+          "Every sellable item needs a unique SKU plus its size and color. Check these carefully before saving.",
+      },
+      {
+        id: "product-stock",
+        title: "Set price and opening stock",
+        description:
+          "Enter the selling price. Use opening stock only for units already on hand; zero is correct for a preorder-only product.",
+      },
+      {
+        id: "product-create",
+        title: "Add barcode and review",
+        description:
+          "A barcode is optional. Review every field before Create product. The button is disabled here, so this guide saves nothing.",
       },
     ],
   },
@@ -96,16 +129,16 @@ export const staffTutorials: StaffTutorial[] = [
     duration: "About 2 min",
     steps: [
       {
-        id: "restock-open",
-        title: "Open Restock",
+        id: "restock-search",
+        title: "Find the product",
         description:
-          "From Home or Products, choose Restock to begin receiving inventory.",
+          "Use this real search field to find a product by name or SKU.",
       },
       {
-        id: "restock-find",
-        title: "Find the variant",
+        id: "restock-variants",
+        title: "Choose the exact variant",
         description:
-          "Search by product name or SKU and confirm the correct variant before changing stock.",
+          "Select the correct size, color, and SKU. Always verify the current stock before receiving more.",
       },
       {
         id: "restock-quantity",
@@ -115,42 +148,9 @@ export const staffTutorials: StaffTutorial[] = [
       },
       {
         id: "restock-confirm",
-        title: "Confirm and verify",
+        title: "Review and confirm",
         description:
-          "Submit the restock and check the updated on-hand quantity shown in the product list.",
-      },
-    ],
-  },
-  {
-    id: "cancel-return",
-    icon: "void-doc",
-    title: "Cancel or return an order",
-    summary: "Choose the safe action for the order's current status.",
-    duration: "About 2 min",
-    steps: [
-      {
-        id: "cancel-open",
-        title: "Open order details",
-        description:
-          "Find the order in Orders and open it. Always check its status and items first.",
-      },
-      {
-        id: "cancel-pending",
-        title: "Cancel a pending order",
-        description:
-          "Use Cancel only before fulfillment. Any reservation or committed stock is released by the system.",
-      },
-      {
-        id: "return-fulfilled",
-        title: "Return a fulfilled order",
-        description:
-          "Use Return all only after the customer physically returns the products in acceptable condition.",
-      },
-      {
-        id: "return-verify",
-        title: "Verify the result",
-        description:
-          "Check the new order status, activity timeline, and inventory quantity before leaving the screen.",
+          "In normal mode, Confirm restock increases inventory. It is disabled in this guide, so stock will not change.",
       },
     ],
   },

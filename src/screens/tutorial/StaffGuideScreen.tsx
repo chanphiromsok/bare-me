@@ -49,7 +49,17 @@ export default function StaffGuideScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const handleOpen = (tutorial: StaffTutorial) => {
-    navigation.navigate("StaffTutorial", { tutorialId: tutorial.id });
+    if (tutorial.id === "new-product") {
+      navigation.navigate("NewProduct", { tutorialId: tutorial.id });
+      return;
+    }
+
+    if (tutorial.id === "restock") {
+      navigation.navigate("Restock", { tutorialId: tutorial.id });
+      return;
+    }
+
+    navigation.navigate("NewOrder", { tutorialId: tutorial.id });
   };
 
   return (
@@ -78,8 +88,9 @@ export default function StaffGuideScreen() {
               Learn without changing store data
             </Text>
             <Text className="mt-2 text-sm leading-5 text-white/75">
-              These walkthroughs explain each workflow. They never create an
-              order, charge a customer, or change inventory.
+              These walkthroughs open the real task screens, but disable the
+              final action. They never create an order or product, charge a
+              customer, or change inventory.
             </Text>
           </View>
         }

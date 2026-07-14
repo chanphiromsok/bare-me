@@ -9,7 +9,6 @@ import NewOrderScreen from "../screens/orders/NewOrderScreen";
 import NewProductScreen from "../screens/products/NewProductScreen";
 import RestockScreen from "../screens/products/RestockScreen";
 import StaffGuideScreen from "../screens/tutorial/StaffGuideScreen";
-import StaffTutorialScreen from "../screens/tutorial/StaffTutorialScreen";
 import { useAuthUser } from "../storage/authUserStore";
 import OperationTabs from "./operationTabs";
 
@@ -50,11 +49,6 @@ const RootStack = createNativeStackNavigator({
     StaffGuide: {
       if: useIsSignedIn,
       screen: StaffGuideScreen,
-      options: { headerShown: false },
-    },
-    StaffTutorial: {
-      if: useIsSignedIn,
-      screen: StaffTutorialScreen,
       options: { headerShown: false },
     },
     Login: {
