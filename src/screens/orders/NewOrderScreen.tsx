@@ -399,70 +399,45 @@ function ProductGridCard({
 
   return (
     <View
-      className={
-        quantity > 0
-          ? "flex-1 overflow-hidden rounded-2xl border-2 border-primary bg-surface"
-          : "flex-1 overflow-hidden rounded-2xl border border-border bg-surface"
-      }
+      className="flex-1 rounded-[20px] bg-surface"
+      style={styles.cardShadow}
     >
       <View
         className={
           quantity > 0
-            ? "relative h-28 items-center justify-center bg-primary-soft"
-            : "relative h-28 items-center justify-center bg-surface-muted"
+            ? "flex-1 overflow-hidden rounded-[20px] border border-primary bg-surface"
+            : "flex-1 overflow-hidden rounded-[20px] border border-border/70 bg-surface"
         }
       >
-        <View className="absolute left-2 top-2 rounded-full bg-surface px-2 py-1">
-          <Text
-            className={
-              availableQuantity === 0
-                ? "text-[11px] font-bold text-warning"
-                : "text-[11px] font-semibold text-muted"
-            }
-            numberOfLines={1}
-          >
-            {stockLabel}
-          </Text>
-        </View>
-
         <View
-          accessibilityElementsHidden
-          className="h-14 w-14 items-center justify-center rounded-2xl bg-surface"
-          importantForAccessibility="no-hide-descendants"
+          className={
+            quantity > 0
+              ? "relative m-2 mb-0 h-28 items-center justify-center rounded-2xl bg-primary-soft"
+              : "relative m-2 mb-0 h-28 items-center justify-center rounded-2xl bg-surface-muted"
+          }
         >
-          <AppIcon name="parcel" color={colors.primary} size={28} />
-        </View>
-
-        {quantity === 0 ? (
-          <Pressable
-            accessibilityHint={
-              isPreorder
-                ? "Preorders can exceed stock on hand."
-                : `${availableQuantity} available.`
-            }
-            accessibilityLabel={`Add one ${item.name}`}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canAdd }}
-            className="absolute bottom-2 right-2 h-11 w-11 items-center justify-center rounded-full bg-surface disabled:opacity-40 active:bg-primary-soft"
-            disabled={!canAdd}
-            onPress={() => onChangeQuantity(item.id, 1)}
-          >
-            <Text className="text-2xl font-medium text-primary">+</Text>
-          </Pressable>
-        ) : (
-          <View className="absolute bottom-2 right-2 flex-row items-center rounded-full bg-surface">
-            <Pressable
-              accessibilityLabel={`Remove one ${item.name}`}
-              accessibilityRole="button"
-              accessibilityValue={{ text: `${quantity} in order` }}
-              className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
-              onPress={() => onChangeQuantity(item.id, quantity - 1)}
+          <View className="absolute left-2 top-2 rounded-full bg-surface px-2.5 py-1">
+            <Text
+              className={
+                availableQuantity === 0
+                  ? "text-[11px] font-bold text-warning"
+                  : "text-[11px] font-semibold text-muted"
+              }
+              numberOfLines={1}
             >
-              <Text className="text-xl font-semibold text-foreground">−</Text>
-            </Pressable>
-            <Text className="min-w-7 text-center text-sm font-bold text-foreground">
-              {quantity}
+              {stockLabel}
             </Text>
+          </View>
+
+          <View
+            accessibilityElementsHidden
+            className="h-12 w-12 items-center justify-center rounded-xl bg-surface"
+            importantForAccessibility="no-hide-descendants"
+          >
+            <AppIcon name="parcel" color={colors.primary} size={24} />
+          </View>
+
+          {quantity === 0 ? (
             <Pressable
               accessibilityHint={
                 isPreorder
@@ -472,30 +447,64 @@ function ProductGridCard({
               accessibilityLabel={`Add one ${item.name}`}
               accessibilityRole="button"
               accessibilityState={{ disabled: !canAdd }}
-              accessibilityValue={{ text: `${quantity} in order` }}
-              className="h-11 w-11 items-center justify-center rounded-full disabled:opacity-40 active:bg-primary-soft"
+              className="absolute bottom-2 right-2 h-11 w-11 items-center justify-center rounded-full bg-surface disabled:opacity-40 active:bg-primary-soft"
               disabled={!canAdd}
-              onPress={() => onChangeQuantity(item.id, quantity + 1)}
+              onPress={() => onChangeQuantity(item.id, 1)}
+              style={styles.controlShadow}
             >
-              <Text className="text-xl font-semibold text-primary">+</Text>
+              <Text className="text-2xl font-medium text-primary">+</Text>
             </Pressable>
-          </View>
-        )}
-      </View>
+          ) : (
+            <View
+              className="absolute bottom-2 right-2 flex-row items-center rounded-full bg-surface"
+              style={styles.controlShadow}
+            >
+              <Pressable
+                accessibilityLabel={`Remove one ${item.name}`}
+                accessibilityRole="button"
+                accessibilityValue={{ text: `${quantity} in order` }}
+                className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
+                onPress={() => onChangeQuantity(item.id, quantity - 1)}
+              >
+                <Text className="text-xl font-semibold text-foreground">−</Text>
+              </Pressable>
+              <Text className="min-w-7 text-center text-sm font-bold text-foreground">
+                {quantity}
+              </Text>
+              <Pressable
+                accessibilityHint={
+                  isPreorder
+                    ? "Preorders can exceed stock on hand."
+                    : `${availableQuantity} available.`
+                }
+                accessibilityLabel={`Add one ${item.name}`}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !canAdd }}
+                accessibilityValue={{ text: `${quantity} in order` }}
+                className="h-11 w-11 items-center justify-center rounded-full disabled:opacity-40 active:bg-primary-soft"
+                disabled={!canAdd}
+                onPress={() => onChangeQuantity(item.id, quantity + 1)}
+              >
+                <Text className="text-xl font-semibold text-primary">+</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
 
-      <View className="min-h-24 p-3">
-        <Text className="text-base font-bold text-foreground">
-          {formatCurrency(item.priceCents)}
-        </Text>
-        <Text
-          className="mt-1 text-sm font-semibold text-foreground"
-          numberOfLines={1}
-        >
-          {item.name}
-        </Text>
-        <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
-          {item.size} · {item.color}
-        </Text>
+        <View className="min-h-24 px-3 pb-3 pt-3">
+          <Text className="text-[17px] font-bold leading-5 text-foreground">
+            {formatCurrency(item.priceCents)}
+          </Text>
+          <Text
+            className="mt-1.5 text-[14px] font-semibold leading-[18px] text-foreground"
+            numberOfLines={1}
+          >
+            {item.name}
+          </Text>
+          <Text className="mt-1 text-xs leading-4 text-muted" numberOfLines={1}>
+            {item.size} · {item.color}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -617,20 +626,21 @@ function CatalogToolbar({
   ];
 
   return (
-    <View className="gap-2 border-b border-border bg-surface px-3 pb-3 pt-safe-offset-1">
+    <View className="gap-3 bg-background px-4 pb-3 pt-safe-offset-2">
       <View
-        className="flex-row items-center gap-2"
+        className="flex-row items-center gap-3"
         {...(tutorialMode ? tour.getTargetProps("order-products") : undefined)}
       >
         <Pressable
           accessibilityLabel="Close new order"
           accessibilityRole="button"
-          className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
+          className="h-12 w-12 items-center justify-center rounded-full bg-surface active:bg-surface-muted"
           onPress={() => navigation.getParent()?.goBack()}
+          style={styles.controlShadow}
         >
-          <Text className="text-2xl text-foreground">‹</Text>
+          <Text className="text-[26px] font-medium text-foreground">‹</Text>
         </Pressable>
-        <View className="flex-1">
+        <View className="flex-1 rounded-xl" style={styles.controlShadow}>
           <SearchField
             onChangeText={onChangeSearch}
             placeholder="Search products or SKU"
@@ -660,14 +670,15 @@ function CatalogToolbar({
                 : "Choose customer"
             }
             accessibilityRole="button"
-            className="min-h-11 flex-row items-center gap-2 rounded-xl bg-surface-muted px-3 active:bg-primary-soft"
+            className="h-12 flex-row items-center gap-3 rounded-2xl bg-surface px-4 active:bg-primary-soft"
             onPress={openCustomerPicker}
+            style={styles.controlShadow}
           >
             <AppIcon
               accessible={false}
               name="profile"
               color={selectedCustomer ? colors.primary : colors.iconMuted}
-              size={19}
+              size={20}
             />
             <Text
               className={
@@ -688,10 +699,11 @@ function CatalogToolbar({
           <Pressable
             accessibilityLabel="Choose order type"
             accessibilityRole="button"
-            className="min-h-11 flex-row items-center gap-1 rounded-xl bg-surface-muted px-3 active:bg-primary-soft"
+            className="h-12 flex-row items-center gap-1.5 rounded-2xl bg-surface px-4 active:bg-primary-soft"
             onPress={() => navigation.navigate("OrderTypePicker")}
+            style={styles.controlShadow}
           >
-            <Text className="text-sm font-bold text-foreground">
+            <Text className="text-[15px] font-semibold text-foreground">
               {saleType === "preorder" ? "Preorder" : "Sale"}
             </Text>
             <Text className="text-base text-muted">⌄</Text>
@@ -699,7 +711,10 @@ function CatalogToolbar({
         </View>
       </View>
 
-      <View className="flex-row rounded-xl bg-surface-muted p-1">
+      <View
+        className="min-h-14 flex-row rounded-2xl bg-surface p-1"
+        style={styles.controlShadow}
+      >
         {filters.map((option) => {
           const selected = filter === option.value;
 
@@ -709,17 +724,18 @@ function CatalogToolbar({
               accessibilityState={{ selected }}
               className={
                 selected
-                  ? "min-h-11 flex-1 items-center justify-center rounded-lg bg-surface px-2"
-                  : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
+                  ? "min-h-12 flex-1 items-center justify-center rounded-xl bg-surface-muted px-2"
+                  : "min-h-12 flex-1 items-center justify-center rounded-xl px-2"
               }
               key={option.value}
               onPress={() => onChangeFilter(option.value)}
+              style={selected ? styles.segmentShadow : undefined}
             >
               <Text
                 className={
                   selected
-                    ? "text-sm font-bold text-foreground"
-                    : "text-sm font-semibold text-muted"
+                    ? "text-[15px] font-semibold text-foreground"
+                    : "text-[15px] font-medium text-muted"
                 }
               >
                 {option.label}
@@ -782,8 +798,12 @@ function CatalogScreen() {
       />
 
       <LegendList
-        columnWrapperStyle={{ columnGap: 10, rowGap: 12 }}
-        contentContainerStyle={{ padding: 12, paddingBottom: 104 }}
+        columnWrapperStyle={{ columnGap: 12, rowGap: 12 }}
+        contentContainerStyle={{
+          paddingBottom: 124,
+          paddingHorizontal: 16,
+          paddingTop: 4,
+        }}
         data={filteredVariants}
         estimatedItemSize={220}
         extraData={quantities}
@@ -834,28 +854,30 @@ function CatalogScreen() {
       />
 
       <View
-        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-3 pb-safe-offset-2 pt-2"
+        className="absolute bottom-0 left-0 right-0 px-4 pb-safe-offset-3 pt-2"
         {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
       >
-        <View className="min-h-14 flex-row items-center gap-3">
+        <View
+          className="min-h-16 flex-row items-center gap-3 rounded-[20px] bg-surface p-2 pl-4"
+          style={styles.checkoutShadow}
+        >
           <View className="flex-1">
-            <Text className="text-xs font-semibold text-muted">
+            <Text className="text-xs font-medium leading-4 text-muted">
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </Text>
-            <Text className="text-lg font-bold text-foreground">
+            <Text className="mt-0.5 text-xl font-bold leading-6 text-foreground">
               {formatCurrency(totalCents)}
             </Text>
           </View>
           <Pressable
             accessibilityLabel={`Review order with ${itemCount} items`}
             accessibilityRole="button"
-            className="min-h-12 min-w-36 items-center justify-center rounded-xl bg-primary px-5 disabled:opacity-40 active:bg-primary-pressed"
+            className="h-12 min-w-36 items-center justify-center rounded-2xl bg-primary px-5 disabled:opacity-40 active:bg-primary-pressed"
             disabled={itemCount === 0}
             onPress={() => navigation.navigate("Review")}
           >
-            <Text className="text-base font-bold text-on-primary">Review</Text>
-            <Text className="text-xs font-semibold text-primary-soft">
-              {itemCount} {itemCount === 1 ? "item" : "items"}
+            <Text className="text-[15px] font-semibold text-on-primary">
+              Review order
             </Text>
           </Pressable>
         </View>
@@ -1369,6 +1391,18 @@ export default function NewOrderScreen() {
 }
 
 const styles = StyleSheet.create({
+  cardShadow: {
+    boxShadow: "0 3px 14px rgba(20, 32, 51, 0.07)",
+  },
+  checkoutShadow: {
+    boxShadow: "0 6px 24px rgba(20, 32, 51, 0.12)",
+  },
+  controlShadow: {
+    boxShadow: "0 2px 10px rgba(20, 32, 51, 0.07)",
+  },
+  segmentShadow: {
+    boxShadow: "0 1px 5px rgba(20, 32, 51, 0.08)",
+  },
   sheetSurface: {
     ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface,
