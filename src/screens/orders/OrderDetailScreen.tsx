@@ -77,6 +77,67 @@ function ItemCard({ item }: LegendListRenderItemProps<DetailItem>) {
   );
 }
 
+function PaymentSummary({
+  order,
+  paymentMethods,
+}: {
+  order: OrderDetail;
+  paymentMethods: string[];
+}) {
+  return (
+    <View className="rounded-2xl border border-border bg-surface p-4">
+      <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+        Payment summary
+      </Text>
+      <View className="mt-4 gap-3">
+        <View className="flex-row justify-between">
+          <Text className="text-sm text-muted">Subtotal</Text>
+          <Text className="text-sm font-semibold text-foreground">
+            {formatCurrency(order.subtotalCents)}
+          </Text>
+        </View>
+        <View className="flex-row justify-between">
+          <Text className="text-sm text-muted">Discount</Text>
+          <Text className="text-sm font-semibold text-foreground">
+            −{formatCurrency(order.discountCents)}
+          </Text>
+        </View>
+        <View className="h-px bg-border" />
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-bold text-foreground">Total</Text>
+          <Text className="text-xl font-bold text-primary">
+            {formatCurrency(order.totalCents)}
+          </Text>
+        </View>
+        <View className="flex-row justify-between">
+          <Text className="text-sm text-muted">Customer paid</Text>
+          <Text className="text-sm font-bold text-success">
+            {formatCurrency(order.paidCents)}
+          </Text>
+        </View>
+        <View className="flex-row justify-between">
+          <Text className="text-sm text-muted">Remaining balance</Text>
+          <Text
+            className={
+              order.balanceCents > 0
+                ? "text-sm font-bold text-danger"
+                : "text-sm font-bold text-success"
+            }
+          >
+            {formatCurrency(order.balanceCents)}
+          </Text>
+        </View>
+        <Text className="text-xs font-semibold uppercase text-success">
+          {order.paymentState.replace("_", " ")}
+          {paymentMethods.length > 0
+            ? ` · ${paymentMethods.join(", ")}`
+            : ""}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function ActionButton({
   disabled,
   label,
@@ -130,11 +191,7 @@ export default function OrderDetailScreen() {
     workflow.recordPayment.isError ||
     workflow.returnOrder.isError ||
     workflow.submit.isError;
-  const paidCents =
-    order?.payments
-      .filter((payment) => !payment.voided)
-      .reduce((total, payment) => total + payment.amountCents, 0) ?? 0;
-  const balanceCents = Math.max((order?.totalCents ?? 0) - paidCents, 0);
+  const balanceCents = order?.balanceCents ?? 0;
   const paymentMethods =
     order?.payments.reduce<string[]>((methods, payment) => {
       if (!payment.voided) methods.push(payment.method.replace("_", " "));
@@ -242,40 +299,10 @@ export default function OrderDetailScreen() {
         ListFooterComponent={
           order ? (
             <View className="mt-5 gap-4">
-              <View className="rounded-2xl border border-border bg-surface p-4">
-                <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
-                  Payment summary
-                </Text>
-                <View className="mt-4 gap-3">
-                  <View className="flex-row justify-between">
-                    <Text className="text-sm text-muted">Subtotal</Text>
-                    <Text className="text-sm font-semibold text-foreground">
-                      {formatCurrency(order.subtotalCents)}
-                    </Text>
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-sm text-muted">Discount</Text>
-                    <Text className="text-sm font-semibold text-foreground">
-                      −{formatCurrency(order.discountCents)}
-                    </Text>
-                  </View>
-                  <View className="h-px bg-border" />
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-base font-bold text-foreground">
-                      Total
-                    </Text>
-                    <Text className="text-xl font-bold text-primary">
-                      {formatCurrency(order.totalCents)}
-                    </Text>
-                  </View>
-                  <Text className="text-xs font-semibold uppercase text-success">
-                    {order.paymentState.replace("_", " ")}
-                    {paymentMethods.length > 0
-                      ? ` · ${paymentMethods.join(", ")}`
-                      : ""}
-                  </Text>
-                </View>
-              </View>
+              <PaymentSummary
+                order={order}
+                paymentMethods={paymentMethods}
+              />
               <View className="rounded-2xl border border-border bg-surface p-4">
                 <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
                   Timeline

@@ -9,6 +9,7 @@ import type {
 } from "../generated/types.gen";
 
 export type OrderDetail = {
+  balanceCents: number;
   cancelReason?: string;
   customer: {
     contact: string;
@@ -30,6 +31,7 @@ export type OrderDetail = {
   }[];
   number: number;
   orderKind: "preorder" | "sale";
+  paidCents: number;
   paymentState: "paid" | "partially_paid" | "unpaid";
   payments: {
     amountCents: number;
@@ -134,8 +136,21 @@ export function useOrderDetailQuery(orderId: string) {
         typeof attributes.total_cents === "number"
           ? attributes.total_cents
           : attributes.subtotal_cents - attributes.discount_cents;
+      const paidCentsAttribute = (attributes as { paid_cents?: unknown })
+        .paid_cents;
+      const paidCents =
+        typeof paidCentsAttribute === "number"
+          ? paidCentsAttribute
+          : payments
+              .filter((payment) => !payment.voided)
+              .reduce((total, payment) => total + payment.amountCents, 0);
+      const balanceCents =
+        typeof attributes.balance_cents === "number"
+          ? attributes.balance_cents
+          : Math.max(totalCents - paidCents, 0);
 
       return {
+        balanceCents,
         cancelReason: optionalString(attributes.cancel_reason),
         customer: { contact, name: customerName },
         discountCents: attributes.discount_cents,
@@ -145,6 +160,7 @@ export function useOrderDetailQuery(orderId: string) {
         items,
         number: attributes.order_number,
         orderKind: attributes.order_kind,
+        paidCents,
         paymentState:
           attributes.payment_state === "paid" ||
           attributes.payment_state === "partially_paid"
