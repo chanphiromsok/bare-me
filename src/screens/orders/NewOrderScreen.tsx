@@ -58,6 +58,7 @@ type NewOrderRoute = RouteProp<
 type NewOrderFlowParamList = {
   Catalog: undefined;
   OrderTypePicker: undefined;
+  ProductFilterPicker: undefined;
   Review: undefined;
 };
 
@@ -596,34 +597,23 @@ function PaymentSelector() {
 }
 
 function CatalogToolbar({
-  filter,
-  onChangeFilter,
   onChangeSearch,
   search,
   tour,
 }: {
-  filter: ProductFilter;
-  onChangeFilter: (filter: ProductFilter) => void;
   onChangeSearch: (search: string) => void;
   search: string;
   tour: ReturnType<typeof useLiveTutorialController>["tour"];
 }) {
   const navigation = useNavigation<FlowNavigation>();
   const {
-    itemCount,
     openCustomerPicker,
+    productFilter,
     saleType,
     selectedCustomer,
     tutorialMode,
   } = useOrderDraft();
-  const filters: { label: string; value: ProductFilter }[] = [
-    { label: "All", value: "all" },
-    {
-      label: saleType === "preorder" ? "Stocked" : "In stock",
-      value: "available",
-    },
-    { label: `Selected ${itemCount}`, value: "selected" },
-  ];
+  const defaultFilter = saleType === "preorder" ? "all" : "available";
 
   return (
     <View className="gap-3 bg-background px-4 pb-3 pt-safe-offset-2">
@@ -634,17 +624,19 @@ function CatalogToolbar({
         <Pressable
           accessibilityLabel="Close new order"
           accessibilityRole="button"
-          className="h-12 w-12 items-center justify-center rounded-full bg-surface active:bg-surface-muted"
+          className="h-12 w-10 items-center justify-center active:opacity-60"
           onPress={() => navigation.getParent()?.goBack()}
-          style={styles.controlShadow}
         >
           <Text className="text-[26px] font-medium text-foreground">‹</Text>
         </Pressable>
-        <View className="flex-1 rounded-xl" style={styles.controlShadow}>
+        <View className="flex-1">
           <SearchField
+            appearance="soft"
+            filterAccessibilityLabel="Filter products"
+            filterActive={productFilter !== defaultFilter}
             onChangeText={onChangeSearch}
+            onFilterPress={() => navigation.navigate("ProductFilterPicker")}
             placeholder="Search products or SKU"
-            showFilterIcon={false}
             value={search}
           />
         </View>
@@ -670,9 +662,8 @@ function CatalogToolbar({
                 : "Choose customer"
             }
             accessibilityRole="button"
-            className="h-12 flex-row items-center gap-3 rounded-2xl bg-surface px-4 active:bg-primary-soft"
+            className="h-12 flex-row items-center gap-3 rounded-[14px] border border-border/70 bg-surface px-3 active:bg-surface-muted"
             onPress={openCustomerPicker}
-            style={styles.controlShadow}
           >
             <AppIcon
               accessible={false}
@@ -699,9 +690,8 @@ function CatalogToolbar({
           <Pressable
             accessibilityLabel="Choose order type"
             accessibilityRole="button"
-            className="h-12 flex-row items-center gap-1.5 rounded-2xl bg-surface px-4 active:bg-primary-soft"
+            className="h-12 flex-row items-center gap-1.5 rounded-[14px] border border-border/70 bg-surface px-3 active:bg-surface-muted"
             onPress={() => navigation.navigate("OrderTypePicker")}
-            style={styles.controlShadow}
           >
             <Text className="text-[15px] font-semibold text-foreground">
               {saleType === "preorder" ? "Preorder" : "Sale"}
@@ -709,40 +699,6 @@ function CatalogToolbar({
             <Text className="text-base text-muted">⌄</Text>
           </Pressable>
         </View>
-      </View>
-
-      <View
-        className="min-h-14 flex-row rounded-2xl bg-surface p-1"
-        style={styles.controlShadow}
-      >
-        {filters.map((option) => {
-          const selected = filter === option.value;
-
-          return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              className={
-                selected
-                  ? "min-h-12 flex-1 items-center justify-center rounded-xl bg-surface-muted px-2"
-                  : "min-h-12 flex-1 items-center justify-center rounded-xl px-2"
-              }
-              key={option.value}
-              onPress={() => onChangeFilter(option.value)}
-              style={selected ? styles.segmentShadow : undefined}
-            >
-              <Text
-                className={
-                  selected
-                    ? "text-[15px] font-semibold text-foreground"
-                    : "text-[15px] font-medium text-muted"
-                }
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
       </View>
     </View>
   );
@@ -758,7 +714,6 @@ function CatalogScreen() {
     productFilter,
     quantities,
     saleType,
-    setProductFilter,
     totalCents,
     tutorial,
     tutorialMode,
@@ -789,13 +744,7 @@ function CatalogScreen() {
   });
   return (
     <View className="flex-1 bg-background" onLayout={startOnLayout}>
-      <CatalogToolbar
-        filter={productFilter}
-        onChangeFilter={setProductFilter}
-        onChangeSearch={setSearch}
-        search={search}
-        tour={tour}
-      />
+      <CatalogToolbar onChangeSearch={setSearch} search={search} tour={tour} />
 
       <LegendList
         columnWrapperStyle={{ columnGap: 12, rowGap: 12 }}
@@ -1143,6 +1092,93 @@ function OrderTypePickerScreen() {
   );
 }
 
+function ProductFilterPickerScreen() {
+  const navigation = useNavigation<FlowNavigation>();
+  const { itemCount, productFilter, saleType, setProductFilter } =
+    useOrderDraft();
+  const insets = useSafeAreaInsets();
+  const options: {
+    description: string;
+    label: string;
+    value: ProductFilter;
+  }[] = [
+    {
+      description: "Browse every product in the catalog.",
+      label: "All products",
+      value: "all",
+    },
+    {
+      description:
+        saleType === "preorder"
+          ? "Only products currently on hand."
+          : "Only products available to sell now.",
+      label: saleType === "preorder" ? "Stocked products" : "In stock",
+      value: "available",
+    },
+    {
+      description: "Only products already added to this order.",
+      label: `Selected (${itemCount})`,
+      value: "selected",
+    },
+  ];
+
+  const selectFilter = (nextFilter: ProductFilter) => {
+    setProductFilter(nextFilter);
+    navigation.goBack();
+  };
+
+  return (
+    <View
+      className="bg-surface px-4 pt-3"
+      style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+    >
+      <Text className="text-xl font-bold text-foreground">Show products</Text>
+      <Text className="mb-2 mt-1 text-sm leading-5 text-muted">
+        Choose which products appear in the catalog.
+      </Text>
+      <View>
+        {options.map((option, index) => {
+          const selected = option.value === productFilter;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              className={
+                index < options.length - 1
+                  ? "min-h-16 flex-row items-center gap-3 border-b border-border/70 py-3 active:opacity-60"
+                  : "min-h-16 flex-row items-center gap-3 py-3 active:opacity-60"
+              }
+              key={option.value}
+              onPress={() => selectFilter(option.value)}
+            >
+              <View
+                className={
+                  selected
+                    ? "h-6 w-6 items-center justify-center rounded-full bg-primary"
+                    : "h-6 w-6 rounded-full border border-border"
+                }
+              >
+                {selected ? (
+                  <Text className="text-sm font-bold text-on-primary">✓</Text>
+                ) : null}
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-semibold text-foreground">
+                  {option.label}
+                </Text>
+                <Text className="mt-0.5 text-sm text-muted">
+                  {option.description}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function ReviewScreen() {
   const navigation = useNavigation<FlowNavigation>();
   const {
@@ -1373,6 +1409,17 @@ function NewOrderFlow() {
           sheetGrabberVisible: true,
         }}
       />
+      <FlowStack.Screen
+        component={ProductFilterPickerScreen}
+        name="ProductFilterPicker"
+        options={{
+          contentStyle: { backgroundColor: colors.surface },
+          presentation: "formSheet",
+          sheetAllowedDetents: "fitToContents",
+          sheetCornerRadius: 28,
+          sheetGrabberVisible: true,
+        }}
+      />
     </FlowStack.Navigator>
   );
 }
@@ -1399,9 +1446,6 @@ const styles = StyleSheet.create({
   },
   controlShadow: {
     boxShadow: "0 2px 10px rgba(20, 32, 51, 0.07)",
-  },
-  segmentShadow: {
-    boxShadow: "0 1px 5px rgba(20, 32, 51, 0.08)",
   },
   sheetSurface: {
     ...StyleSheet.absoluteFill,

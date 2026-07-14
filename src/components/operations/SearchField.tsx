@@ -7,6 +7,7 @@ type SearchFieldProps = Pick<
   TextInputProps,
   "onChangeText" | "placeholder" | "value"
 > & {
+  appearance?: "default" | "soft";
   filterAccessibilityLabel?: string;
   filterActive?: boolean;
   onFilterPress?: () => void;
@@ -14,6 +15,7 @@ type SearchFieldProps = Pick<
 };
 
 export default function SearchField({
+  appearance = "default",
   filterAccessibilityLabel = "Open filters",
   filterActive = false,
   onChangeText,
@@ -26,7 +28,11 @@ export default function SearchField({
     <View
       accessibilityLabel={placeholder}
       accessibilityRole="search"
-      className="h-12 flex-row items-center gap-3 rounded-xl border border-border bg-surface px-4"
+      className={
+        appearance === "soft"
+          ? "h-12 flex-row items-center gap-3 rounded-[14px] bg-surface-muted px-4"
+          : "h-12 flex-row items-center gap-3 rounded-xl border border-border bg-surface px-4"
+      }
     >
       <View
         accessibilityElementsHidden
