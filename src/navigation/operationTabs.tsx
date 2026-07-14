@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AppIcon from "../components/icons/AppIcon";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import MoreScreen from "../screens/more/MoreScreen";
-import { colors } from "../theme";
+import { colors } from "../theme/colors";
 import OrdersStack from "./ordersStack";
 import ProductsStack from "./productsStack";
 import CustomersStack from "./customersStack";
@@ -22,9 +22,6 @@ const OperationTabs = createBottomTabNavigator({
     tabBarStyle: {
       backgroundColor: colors.surface,
       borderTopColor: colors.border,
-      height: 82,
-      paddingBottom: 12,
-      paddingTop: 8,
     },
   },
   screens: {

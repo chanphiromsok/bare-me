@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AppIcon from "../components/icons/AppIcon";
 import HomeScreen from "../screens/home/HomeScreen";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
-import { colors } from "../theme";
+import { colors } from "../theme/colors";
 
 const Tabs = createBottomTabNavigator({
   screenOptions: {
@@ -11,15 +11,13 @@ const Tabs = createBottomTabNavigator({
     tabBarActiveTintColor: colors.tabActive,
     tabBarInactiveTintColor: colors.tabInactive,
     tabBarLabelStyle: {
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 11,
+      fontWeight: "600",
+      lineHeight: 15,
     },
     tabBarStyle: {
       backgroundColor: colors.surface,
       borderTopColor: colors.border,
-      height: 82,
-      paddingBottom: 12,
-      paddingTop: 8,
     },
   },
   screens: {

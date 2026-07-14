@@ -94,44 +94,35 @@ function OrderTypeSelector({
   value: "preorder" | "sale";
 }) {
   return (
-    <View>
-      <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-        Order type
-      </Text>
-      <View className="flex-row rounded-2xl bg-surface-muted p-1">
-        {(["sale", "preorder"] as const).map((type) => {
-          const selected = value === type;
+    <View className="flex-row rounded-2xl bg-surface-muted p-1">
+      {(["sale", "preorder"] as const).map((type) => {
+        const selected = value === type;
 
-          return (
-            <Pressable
-              accessibilityRole="button"
+        return (
+          <Pressable
+            accessibilityLabel={`${type === "sale" ? "In-stock sale" : "Preorder"} order type`}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            className={
+              selected
+                ? "min-h-11 flex-1 items-center justify-center rounded-xl border border-border bg-surface"
+                : "min-h-11 flex-1 items-center justify-center rounded-xl"
+            }
+            key={type}
+            onPress={() => onChange(type)}
+          >
+            <Text
               className={
                 selected
-                  ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-surface"
-                  : "min-h-11 flex-1 items-center justify-center rounded-xl"
+                  ? "font-bold text-foreground"
+                  : "font-semibold text-muted"
               }
-              key={type}
-              onPress={() => onChange(type)}
             >
-              <Text
-                className={
-                  selected
-                    ? "font-bold text-primary"
-                    : "font-semibold text-muted"
-                }
-              >
-                {type === "sale" ? "In-stock sale" : "Preorder"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {value === "preorder" ? (
-        <Text className="mt-2 text-sm leading-5 text-muted">
-          Use for chat orders even when stock is zero. Payment and stock
-          allocation can be recorded later.
-        </Text>
-      ) : null}
+              {type === "sale" ? "In-stock sale" : "Preorder"}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -148,46 +139,48 @@ function PaymentSelector({
   value: PosPaymentMethod;
 }) {
   return (
-    <>
-      <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-        3 · Customer payment
-      </Text>
-      <View className="mb-3 flex-row gap-2">
-        {(
-          [
-            { label: "Paid now", value: "immediate" },
-            { label: "Pay later", value: "credit" },
-          ] as const
-        ).map((option) => {
-          const selected = terms === option.value;
+    <View className="rounded-2xl border border-border bg-surface p-3">
+      <View className="mb-2 flex-row items-center gap-3">
+        <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+          3 · Payment
+        </Text>
+        <View className="flex-1 flex-row rounded-xl bg-surface-muted p-1">
+          {(
+            [
+              { label: "Paid now", value: "immediate" },
+              { label: "Pay later", value: "credit" },
+            ] as const
+          ).map((option) => {
+            const selected = terms === option.value;
 
-          return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              className={
-                selected
-                  ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
-                  : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
-              }
-              key={option.value}
-              onPress={() => onChangeTerms(option.value)}
-            >
-              <Text
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
                 className={
                   selected
-                    ? "text-center text-xs font-bold text-primary"
-                    : "text-center text-xs font-semibold text-muted"
+                    ? "min-h-11 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-2"
+                    : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
                 }
+                key={option.value}
+                onPress={() => onChangeTerms(option.value)}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  className={
+                    selected
+                      ? "text-center text-sm font-bold text-foreground"
+                      : "text-center text-xs font-semibold text-muted"
+                  }
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
       {terms === "immediate" ? (
-        <View className="mb-3 flex-row gap-2">
+        <View className="flex-row gap-2">
           {paymentMethods.map((method) => {
             const selected = value === method.value;
 
@@ -197,7 +190,7 @@ function PaymentSelector({
                 accessibilityState={{ selected }}
                 className={
                   selected
-                    ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
+                    ? "min-h-11 flex-1 items-center justify-center rounded-xl border border-primary bg-primary-soft px-2"
                     : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
                 }
                 key={method.value}
@@ -217,12 +210,12 @@ function PaymentSelector({
           })}
         </View>
       ) : (
-        <Text className="mb-3 text-sm leading-5 text-muted">
+        <Text className="text-sm leading-5 text-muted">
           Stock is deducted now. Record partial or full payments later from the
           order invoice.
         </Text>
       )}
-    </>
+    </View>
   );
 }
 
@@ -247,8 +240,8 @@ function ProductRow({
 
   return (
     <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-      <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-soft">
-        <AppIcon name="parcel" color={colors.primary} size={22} />
+      <View className="h-12 w-12 items-center justify-center rounded-xl bg-surface-muted">
+        <AppIcon name="parcel" color={colors.iconMuted} size={22} />
       </View>
       <View className="flex-1">
         <Text className="text-[15px] font-bold text-foreground">
@@ -257,7 +250,7 @@ function ProductRow({
         <Text className="mt-0.5 text-xs text-muted">
           {item.sku} · {item.size} · {item.color}
         </Text>
-        <Text className="mt-1 text-sm font-semibold text-primary">
+        <Text className="mt-1 text-sm font-semibold text-muted">
           {formatCurrency(item.priceCents)} · {availableQuantity} available
         </Text>
         {isPreorder ? (
@@ -283,11 +276,11 @@ function ProductRow({
           <Pressable
             accessibilityLabel={`Add one ${item.name}`}
             accessibilityRole="button"
-            className="h-11 w-11 items-center justify-center rounded-full bg-primary disabled:opacity-40"
+            className="h-11 w-11 items-center justify-center rounded-full border border-primary bg-primary-soft disabled:opacity-40"
             disabled={maximumQuantity === 0 || quantity >= maximumQuantity}
             onPress={() => onChangeQuantity(item.id, quantity + 1)}
           >
-            <Text className="text-xl font-semibold text-on-primary">+</Text>
+            <Text className="text-xl font-semibold text-primary">+</Text>
           </Pressable>
         </View>
       </View>
@@ -408,7 +401,7 @@ function ProductPickerSheet({
                     accessibilityState={{ selected }}
                     className={
                       selected
-                        ? "min-h-11 items-center justify-center rounded-full bg-primary px-4"
+                        ? "min-h-11 items-center justify-center rounded-full border border-primary bg-primary-soft px-4"
                         : "min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4"
                     }
                     key={option.value}
@@ -417,7 +410,7 @@ function ProductPickerSheet({
                     <Text
                       className={
                         selected
-                          ? "text-sm font-bold text-on-primary"
+                          ? "text-sm font-bold text-primary"
                           : "text-sm font-semibold text-muted"
                       }
                     >
@@ -505,29 +498,27 @@ function OrderScreenHeader({
   tutorialMode: boolean;
 }) {
   return (
-    <View className="flex-row items-center gap-3 px-5 pb-4 pt-3">
+    <View className="flex-row items-center gap-2 px-4 pb-2 pt-1">
       <Pressable
         accessibilityLabel="Back to orders"
         accessibilityRole="button"
-        className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:bg-surface-muted"
+        className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted active:opacity-70"
         onPress={onBack}
       >
-        <Text className="text-2xl text-primary">‹</Text>
+        <Text className="text-2xl text-foreground">‹</Text>
       </Pressable>
       <View className="flex-1">
-        <Text className="text-2xl font-bold text-foreground">
+        <Text className="text-xl font-bold text-foreground">
           {saleType === "preorder" ? "New preorder" : "New sale"}
         </Text>
-        <Text className="text-sm text-muted">
-          {tutorialMode
-            ? "Practice guide · Nothing will be saved"
-            : saleType === "preorder"
-              ? "Customer, items, and expected total"
-              : "Customer, items, and payment"}
-        </Text>
+        {tutorialMode ? (
+          <Text className="text-xs font-semibold text-warning">
+            Practice guide · Nothing will be saved
+          </Text>
+        ) : null}
       </View>
-      <View className="rounded-full bg-primary-soft px-3 py-2">
-        <Text className="text-sm font-bold text-primary">
+      <View className="rounded-full bg-surface-muted px-2.5 py-1.5">
+        <Text className="text-xs font-bold text-subtle">
           {itemCount} {itemCount === 1 ? "item" : "items"}
         </Text>
       </View>
@@ -647,7 +638,7 @@ export default function NewOrderScreen() {
 
       <LegendList
         accessibilityElementsHidden={productPickerOpen}
-        contentContainerStyle={{ paddingBottom: 280, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
         data={selectedVariants}
         estimatedItemSize={104}
         extraData={quantities}
@@ -657,7 +648,7 @@ export default function NewOrderScreen() {
         ItemSeparatorComponent={() => <View className="h-3" />}
         keyExtractor={(variant) => variant.id}
         ListHeaderComponent={
-          <View className="mb-4 gap-4">
+          <View className="mb-3 gap-3">
             <View
               {...(tutorialMode
                 ? tour.getTargetProps("order-type")
@@ -681,29 +672,20 @@ export default function NewOrderScreen() {
                     return (
                       <Pressable
                         accessibilityRole="button"
+                        accessibilityState={{ selected }}
                         className={
                           selected
-                            ? "min-w-40 rounded-2xl bg-primary p-3"
+                            ? "min-w-40 rounded-2xl border border-primary bg-primary-soft p-3"
                             : "min-w-40 rounded-2xl border border-border bg-surface p-3"
                         }
                         key={customer.id}
                         onPress={() => setSelectedCustomerId(customer.id)}
                       >
-                        <Text
-                          className={
-                            selected
-                              ? "font-bold text-on-primary"
-                              : "font-bold text-foreground"
-                          }
-                        >
+                        <Text className="font-bold text-foreground">
                           {customer.name}
                         </Text>
                         <Text
-                          className={
-                            selected
-                              ? "mt-1 text-xs text-primary-soft"
-                              : "mt-1 text-xs text-muted"
-                          }
+                          className="mt-1 text-xs text-muted"
                           numberOfLines={1}
                         >
                           {customer.detail}
@@ -752,6 +734,28 @@ export default function NewOrderScreen() {
             </View>
           </View>
         }
+        ListFooterComponent={
+          <View className="pb-4 pt-1">
+            {saleType === "sale" ? (
+              <PaymentSelector
+                onChange={setPaymentMethod}
+                onChangeTerms={setPaymentTerms}
+                terms={paymentTerms}
+                value={paymentMethod}
+              />
+            ) : (
+              <View className="rounded-2xl border border-border bg-surface p-3">
+                <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+                  3 · Payment
+                </Text>
+                <Text className="mt-1 text-sm leading-5 text-muted">
+                  Payment and inventory are recorded after the preorder is
+                  fulfilled.
+                </Text>
+              </View>
+            )}
+          </View>
+        }
         maintainVisibleContentPosition
         ref={listRef}
         recycleItems
@@ -786,23 +790,11 @@ export default function NewOrderScreen() {
       <View
         {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
         accessibilityElementsHidden={productPickerOpen}
-        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4"
+        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-4 pb-safe-offset-2 pt-2"
         importantForAccessibility={
           productPickerOpen ? "no-hide-descendants" : "auto"
         }
       >
-        {saleType === "sale" ? (
-          <PaymentSelector
-            onChange={setPaymentMethod}
-            onChangeTerms={setPaymentTerms}
-            terms={paymentTerms}
-            value={paymentMethod}
-          />
-        ) : (
-          <Text className="mb-3 text-sm text-muted">
-            No inventory movement or payment will be recorded at confirmation.
-          </Text>
-        )}
         {checkoutMutation.isError ? (
           <Text accessibilityRole="alert" className="mb-2 text-sm text-danger">
             {saleType === "preorder" ? "Preorder" : "Sale"} could not be
