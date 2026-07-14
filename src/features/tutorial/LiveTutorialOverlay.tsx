@@ -1,5 +1,6 @@
 import type { SpotlightTourControls } from "react-native-nitro-spotlight";
 import { Spotlight } from "react-native-nitro-spotlight";
+import { Portal } from "react-native-teleport";
 import {
   Pressable,
   StyleSheet,
@@ -58,73 +59,81 @@ export default function LiveTutorialOverlay({
   };
 
   return (
-    <Spotlight
-      borderColor={colors.brandOrange}
-      borderRadius={18}
-      borderWidth={2}
-      controls={tour.spotlight}
-      dimOpacity={0.74}
-      onBackdropPress={handleClose}
-      padding={6}
+    <Portal
+      hostName="spotlight-root"
+      name="staff-tutorial-spotlight"
+      style={StyleSheet.absoluteFill}
     >
-      {tour.currentStep && targetRect ? (
-        <View
-          accessibilityLiveRegion="polite"
-          accessibilityViewIsModal
-          className="absolute rounded-3xl bg-surface p-5"
-          style={[styles.tooltipShadow, tooltipStyle]}
-        >
-          <View className="flex-row items-center justify-between gap-3">
-            <View>
-              <Text className="text-xs font-bold uppercase tracking-[0.8px] text-brand-orange">
-                Step {tour.currentIndex + 1} of {tour.steps.length}
-              </Text>
-              <Text className="mt-0.5 text-[11px] font-semibold text-success">
-                Practice guide · Nothing will be saved
-              </Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Exit walkthrough"
-              accessibilityRole="button"
-              className="min-h-11 min-w-11 items-center justify-center px-2"
-              onPress={handleClose}
-            >
-              <Text className="text-sm font-semibold text-muted">Skip</Text>
-            </Pressable>
-          </View>
-          <Text className="mt-2 text-lg font-bold text-foreground">
-            {tour.currentStep.title}
-          </Text>
-          <Text className="mt-2 text-sm leading-5 text-muted">
-            {tour.currentStep.description}
-          </Text>
-          <View className="mt-5 flex-row justify-end gap-3">
-            {tour.currentIndex > 0 ? (
+      <Spotlight
+        borderColor={colors.brandOrange}
+        borderRadius={18}
+        borderWidth={2}
+        controls={tour.spotlight}
+        dimOpacity={0.74}
+        onBackdropPress={handleClose}
+        padding={6}
+      >
+        {tour.currentStep && targetRect ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityViewIsModal
+            className="absolute rounded-3xl bg-surface p-5"
+            style={[styles.tooltipShadow, tooltipStyle]}
+          >
+            <View className="flex-row items-center justify-between gap-3">
+              <View>
+                <Text className="text-xs font-bold uppercase tracking-[0.8px] text-brand-orange">
+                  Step {tour.currentIndex + 1} of {tour.steps.length}
+                </Text>
+                <Text className="mt-0.5 text-[11px] font-semibold text-success">
+                  Practice guide · Nothing will be saved
+                </Text>
+              </View>
               <Pressable
-                accessibilityLabel="Previous tutorial step"
+                accessibilityLabel="Exit walkthrough"
                 accessibilityRole="button"
-                className="min-h-12 min-w-24 items-center justify-center rounded-xl border border-border px-4 active:bg-surface-muted"
-                onPress={() => onStepChange(tour.currentIndex - 1)}
+                className="min-h-11 min-w-11 items-center justify-center px-2"
+                onPress={handleClose}
               >
-                <Text className="text-sm font-bold text-foreground">Back</Text>
+                <Text className="text-sm font-semibold text-muted">Skip</Text>
               </Pressable>
-            ) : null}
-            <Pressable
-              accessibilityLabel={
-                lastStep ? "Finish walkthrough" : "Next tutorial step"
-              }
-              accessibilityRole="button"
-              className="min-h-12 min-w-24 items-center justify-center rounded-xl bg-primary px-5 active:bg-primary-pressed"
-              onPress={handleNext}
-            >
-              <Text className="text-sm font-bold text-on-primary">
-                {lastStep ? "Done" : "Next"}
-              </Text>
-            </Pressable>
+            </View>
+            <Text className="mt-2 text-lg font-bold text-foreground">
+              {tour.currentStep.title}
+            </Text>
+            <Text className="mt-2 text-sm leading-5 text-muted">
+              {tour.currentStep.description}
+            </Text>
+            <View className="mt-5 flex-row justify-end gap-3">
+              {tour.currentIndex > 0 ? (
+                <Pressable
+                  accessibilityLabel="Previous tutorial step"
+                  accessibilityRole="button"
+                  className="min-h-12 min-w-24 items-center justify-center rounded-xl border border-border px-4 active:bg-surface-muted"
+                  onPress={() => onStepChange(tour.currentIndex - 1)}
+                >
+                  <Text className="text-sm font-bold text-foreground">
+                    Back
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                accessibilityLabel={
+                  lastStep ? "Finish walkthrough" : "Next tutorial step"
+                }
+                accessibilityRole="button"
+                className="min-h-12 min-w-24 items-center justify-center rounded-xl bg-primary px-5 active:bg-primary-pressed"
+                onPress={handleNext}
+              >
+                <Text className="text-sm font-bold text-on-primary">
+                  {lastStep ? "Done" : "Next"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      ) : null}
-    </Spotlight>
+        ) : null}
+      </Spotlight>
+    </Portal>
   );
 }
 

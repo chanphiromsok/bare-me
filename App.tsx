@@ -4,12 +4,12 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { PortalProvider } from "react-native-teleport";
+import { PortalHost, PortalProvider } from "react-native-teleport";
 import { queryClient } from "./src/api/queryClient";
 import UniwindWithSafeAreaProvider from "./src/ctx/SafeAreaUniwindProvider";
 import I18nProvider from "./src/i18n/i18nProvider";
 import Navigation from "./src/navigation";
-import { navigationTheme } from "./src/theme";
+import { navigationTheme } from "./src/theme/navigationTheme";
 
 export default function App() {
   return (
@@ -23,6 +23,7 @@ export default function App() {
                 <StatusBar style="dark" />
               </I18nProvider>
             </UniwindWithSafeAreaProvider>
+            <PortalHost name="spotlight-root" style={styles.spotlightHost} />
           </PortalProvider>
         </QueryClientProvider>
       </KeyboardProvider>
@@ -34,5 +35,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: navigationTheme.colors.background,
+  },
+  spotlightHost: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "transparent",
   },
 });
