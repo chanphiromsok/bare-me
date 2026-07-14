@@ -3510,6 +3510,7 @@ __metadata:
     react-native-nitro-image: "npm:^0.15.1"
     react-native-nitro-modules: "npm:^0.36.1"
     react-native-nitro-spotlight: "npm:^0.2.0"
+    react-native-pager-view: "npm:8.0.2"
     react-native-reanimated: "npm:^4.5.1"
     react-native-reanimated-carousel: "npm:^4.0.3"
     react-native-safe-area-context: "npm:^5.8.0"
@@ -8021,6 +8022,16 @@ __metadata:
     react-native: "*"
     react-native-nitro-modules: ^0.35.9
   checksum: 10/938b07ff9455bb64d10d35af7f71280de877e8fa6a3324696dc50758006043f0b040f6e943417a48eb70ecc6bdb456ef05c2ac87b86f76db5b5ca1e453fb14d0
+  languageName: node
+  linkType: hard
+
+"react-native-pager-view@npm:8.0.2":
+  version: 8.0.2
+  resolution: "react-native-pager-view@npm:8.0.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/b17b9407291c42978b163009bb2d27d44e35ffb84f19a60c66108249c564ad911554cf22dc9ef214d7f9318b75fe5cc68f4555bb57a042de3c7171d4230d893b
   languageName: node
   linkType: hard
 

@@ -6,11 +6,12 @@ import { useAtom } from "jotai";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import AppIcon from "../../components/icons/AppIcon";
 import SearchField from "../../components/operations/SearchField";
 import StatusPill from "../../components/operations/StatusPill";
+import PagerStickyHeader from "../../components/pager/PagerStickyHeader";
 import {
   orderFilterAtom,
   type OrderFilter,
@@ -40,6 +41,38 @@ const filters: { label: string; value: OrderFilter }[] = [
 type OrderCardProps = LegendListRenderItemProps<Order> & {
   onPress: (orderId: string) => void;
 };
+
+type OrderListPageProps = {
+  errorMessage?: string;
+  isError: boolean;
+  isPending: boolean;
+  onOpenOrder: (orderId: string) => void;
+  onRetry: () => void;
+  orders: Order[];
+  search: string;
+};
+
+function filterOrders(
+  orders: Order[],
+  filter: OrderFilter,
+  search: string,
+): Order[] {
+  const term = search.trim().toLowerCase();
+
+  return orders.filter((order) => {
+    const matchesStatus =
+      filter === "all" ||
+      (filter === "preorder"
+        ? order.orderKind === "preorder"
+        : order.status.toLowerCase() === filter);
+    const matchesSearch =
+      !term ||
+      order.number.toLowerCase().includes(term) ||
+      order.customer.toLowerCase().includes(term);
+
+    return matchesStatus && matchesSearch;
+  });
+}
 
 function OrderCard({ item: order, onPress }: OrderCardProps) {
   return (
@@ -87,38 +120,31 @@ function OrderCard({ item: order, onPress }: OrderCardProps) {
   );
 }
 
-export default function OrdersScreen() {
-  const navigation = useNavigation<OrdersNavigation>();
-  const [filter, setFilter] = useAtom(orderFilterAtom);
-  const [search, setSearch] = useState("");
-  const ordersQuery = useOrderListQuery(filter);
-  const orders = (() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return ordersQuery.data ?? [];
-
-    return (ordersQuery.data ?? []).filter(
-      (order) =>
-        order.number.toLowerCase().includes(term) ||
-        order.customer.toLowerCase().includes(term),
-    );
-  })();
-
-  const emptyState = ordersQuery.isPending ? (
+function OrderListPage({
+  errorMessage,
+  isError,
+  isPending,
+  onOpenOrder,
+  onRetry,
+  orders,
+  search,
+}: OrderListPageProps) {
+  const emptyState = isPending ? (
     <View className="rounded-2xl border border-border bg-surface p-6">
       <Text className="text-center text-sm text-muted">Loading orders…</Text>
     </View>
-  ) : ordersQuery.isError ? (
+  ) : isError ? (
     <View className="items-center rounded-2xl border border-border bg-surface p-6">
       <Text className="text-center text-sm font-semibold text-foreground">
         Orders could not be loaded
       </Text>
       <Text className="mt-1 text-center text-sm text-muted">
-        {ordersQuery.error.message}
+        {errorMessage}
       </Text>
       <Pressable
         accessibilityRole="button"
         className="mt-4 min-h-11 justify-center rounded-full bg-primary px-5 active:bg-primary-pressed"
-        onPress={() => ordersQuery.refetch()}
+        onPress={onRetry}
       >
         <Text className="text-sm font-semibold text-on-primary">Try again</Text>
       </Pressable>
@@ -126,71 +152,80 @@ export default function OrdersScreen() {
   ) : (
     <View className="rounded-2xl border border-border bg-surface p-6">
       <Text className="text-center text-sm text-muted">
-        No orders match this filter or search.
+        No orders match this status or search.
       </Text>
     </View>
   );
 
   return (
+    <LegendList
+      contentContainerStyle={{
+        paddingBottom: 112,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+      }}
+      data={orders}
+      estimatedItemSize={124}
+      extraData={search}
+      ItemSeparatorComponent={() => <View className="h-3" />}
+      keyExtractor={(order) => order.id}
+      ListEmptyComponent={emptyState}
+      recycleItems
+      renderItem={(props) => <OrderCard {...props} onPress={onOpenOrder} />}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+}
+
+export default function OrdersScreen() {
+  const navigation = useNavigation<OrdersNavigation>();
+  const [filter, setFilter] = useAtom(orderFilterAtom);
+  const [search, setSearch] = useState("");
+  const ordersQuery = useOrderListQuery("all");
+  const activeIndex = Math.max(
+    filters.findIndex((item) => item.value === filter),
+    0,
+  );
+  const openOrder = (orderId: string) =>
+    navigation.navigate("OrderDetail", { orderId });
+
+  return (
     <View className="flex-1 bg-background pt-safe">
-      <LegendList
-        contentContainerStyle={{ paddingBottom: 112, paddingHorizontal: 20 }}
-        data={orders}
-        estimatedItemSize={124}
-        extraData={search}
-        ItemSeparatorComponent={() => <View className="h-3" />}
-        keyExtractor={(order) => order.number}
-        ListEmptyComponent={emptyState}
-        ListHeaderComponent={
-          <View className="mb-4 gap-4 pt-2">
+      <PagerStickyHeader
+        activeIndex={activeIndex}
+        items={filters}
+        onIndexChange={(index) => setFilter(filters[index]?.value ?? "all")}
+        renderHeader={() => (
+          <View className="px-5 pb-2 pt-2">
             <SearchField
               onChangeText={setSearch}
               placeholder="Search order or customer"
+              showFilterIcon={false}
               value={search}
             />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-2">
-                {filters.map((item) => {
-                  const selected = filter === item.value;
-
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      className={
-                        selected
-                          ? "min-h-11 justify-center rounded-full bg-primary px-4"
-                          : "min-h-11 justify-center rounded-full border border-border bg-surface px-4"
-                      }
-                      key={item.value}
-                      onPress={() => setFilter(item.value)}
-                    >
-                      <Text
-                        className={
-                          selected
-                            ? "text-sm font-semibold text-on-primary"
-                            : "text-sm font-semibold text-subtle"
-                        }
-                      >
-                        {item.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </ScrollView>
           </View>
-        }
-        recycleItems
-        renderItem={(props) => (
-          <OrderCard
-            {...props}
-            onPress={(orderId) =>
-              navigation.navigate("OrderDetail", { orderId })
-            }
-          />
         )}
-        showsVerticalScrollIndicator={false}
-      />
+      >
+        {filters.map((item, index) => (
+          <View className="flex-1" key={item.value}>
+            {Math.abs(index - activeIndex) <= 1 ? (
+              <OrderListPage
+                errorMessage={ordersQuery.error?.message}
+                isError={ordersQuery.isError}
+                isPending={ordersQuery.isPending}
+                onOpenOrder={openOrder}
+                onRetry={() => ordersQuery.refetch()}
+                orders={filterOrders(
+                  ordersQuery.data ?? [],
+                  item.value,
+                  search,
+                )}
+                search={search}
+              />
+            ) : null}
+          </View>
+        ))}
+      </PagerStickyHeader>
       <Pressable
         accessibilityLabel="Create new order"
         accessibilityRole="button"
