@@ -372,6 +372,135 @@ function ProductRow({
   );
 }
 
+type ProductGridCardProps = {
+  item: PosVariant;
+  onChangeQuantity: (variantId: string, nextQuantity: number) => void;
+  quantity: number;
+  saleType: SaleType;
+};
+
+function ProductGridCard({
+  item,
+  onChangeQuantity,
+  quantity,
+  saleType,
+}: ProductGridCardProps) {
+  const isPreorder = saleType === "preorder";
+  const maximumQuantity = isPreorder
+    ? Number.POSITIVE_INFINITY
+    : Math.max(item.stock, 0);
+  const availableQuantity = isPreorder
+    ? item.stock
+    : Math.max(item.stock - quantity, 0);
+  const canAdd = maximumQuantity > 0 && quantity < maximumQuantity;
+  const stockLabel = isPreorder
+    ? `${availableQuantity} on hand`
+    : `${availableQuantity} left`;
+
+  return (
+    <View
+      className={
+        quantity > 0
+          ? "flex-1 overflow-hidden rounded-2xl border-2 border-primary bg-surface"
+          : "flex-1 overflow-hidden rounded-2xl border border-border bg-surface"
+      }
+    >
+      <View
+        className={
+          quantity > 0
+            ? "relative h-28 items-center justify-center bg-primary-soft"
+            : "relative h-28 items-center justify-center bg-surface-muted"
+        }
+      >
+        <View className="absolute left-2 top-2 rounded-full bg-surface px-2 py-1">
+          <Text
+            className={
+              availableQuantity === 0
+                ? "text-[11px] font-bold text-warning"
+                : "text-[11px] font-semibold text-muted"
+            }
+            numberOfLines={1}
+          >
+            {stockLabel}
+          </Text>
+        </View>
+
+        <View
+          accessibilityElementsHidden
+          className="h-14 w-14 items-center justify-center rounded-2xl bg-surface"
+          importantForAccessibility="no-hide-descendants"
+        >
+          <AppIcon name="parcel" color={colors.primary} size={28} />
+        </View>
+
+        {quantity === 0 ? (
+          <Pressable
+            accessibilityHint={
+              isPreorder
+                ? "Preorders can exceed stock on hand."
+                : `${availableQuantity} available.`
+            }
+            accessibilityLabel={`Add one ${item.name}`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canAdd }}
+            className="absolute bottom-2 right-2 h-11 w-11 items-center justify-center rounded-full bg-surface disabled:opacity-40 active:bg-primary-soft"
+            disabled={!canAdd}
+            onPress={() => onChangeQuantity(item.id, 1)}
+          >
+            <Text className="text-2xl font-medium text-primary">+</Text>
+          </Pressable>
+        ) : (
+          <View className="absolute bottom-2 right-2 flex-row items-center rounded-full bg-surface">
+            <Pressable
+              accessibilityLabel={`Remove one ${item.name}`}
+              accessibilityRole="button"
+              accessibilityValue={{ text: `${quantity} in order` }}
+              className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
+              onPress={() => onChangeQuantity(item.id, quantity - 1)}
+            >
+              <Text className="text-xl font-semibold text-foreground">−</Text>
+            </Pressable>
+            <Text className="min-w-7 text-center text-sm font-bold text-foreground">
+              {quantity}
+            </Text>
+            <Pressable
+              accessibilityHint={
+                isPreorder
+                  ? "Preorders can exceed stock on hand."
+                  : `${availableQuantity} available.`
+              }
+              accessibilityLabel={`Add one ${item.name}`}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canAdd }}
+              accessibilityValue={{ text: `${quantity} in order` }}
+              className="h-11 w-11 items-center justify-center rounded-full disabled:opacity-40 active:bg-primary-soft"
+              disabled={!canAdd}
+              onPress={() => onChangeQuantity(item.id, quantity + 1)}
+            >
+              <Text className="text-xl font-semibold text-primary">+</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      <View className="min-h-24 p-3">
+        <Text className="text-base font-bold text-foreground">
+          {formatCurrency(item.priceCents)}
+        </Text>
+        <Text
+          className="mt-1 text-sm font-semibold text-foreground"
+          numberOfLines={1}
+        >
+          {item.name}
+        </Text>
+        <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+          {item.size} · {item.color}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function PaymentSelector() {
   const { paymentMethod, paymentTerms, setPaymentMethod, setPaymentTerms } =
     useOrderDraft();
@@ -457,7 +586,7 @@ function PaymentSelector() {
   );
 }
 
-function CatalogHeader({
+function CatalogToolbar({
   filter,
   onChangeFilter,
   onChangeSearch,
@@ -488,8 +617,11 @@ function CatalogHeader({
   ];
 
   return (
-    <View className="gap-3 border-b border-border bg-surface px-4 pb-3 pt-safe-offset-1">
-      <View className="flex-row items-center gap-2">
+    <View className="gap-2 border-b border-border bg-surface px-3 pb-3 pt-safe-offset-1">
+      <View
+        className="flex-row items-center gap-2"
+        {...(tutorialMode ? tour.getTargetProps("order-products") : undefined)}
+      >
         <Pressable
           accessibilityLabel="Close new order"
           accessibilityRole="button"
@@ -499,12 +631,56 @@ function CatalogHeader({
           <Text className="text-2xl text-foreground">‹</Text>
         </Pressable>
         <View className="flex-1">
-          <Text className="text-xl font-bold text-foreground">New order</Text>
-          {tutorialMode ? (
-            <Text className="text-xs font-semibold text-warning">
-              Practice guide · Nothing will be saved
+          <SearchField
+            onChangeText={onChangeSearch}
+            placeholder="Search products or SKU"
+            showFilterIcon={false}
+            value={search}
+          />
+        </View>
+      </View>
+
+      {tutorialMode ? (
+        <Text className="px-1 text-xs font-semibold text-warning">
+          Practice guide · Nothing will be saved
+        </Text>
+      ) : null}
+
+      <View className="flex-row items-center gap-2">
+        <View
+          className="flex-1"
+          {...(tutorialMode
+            ? tour.getTargetProps("order-customer")
+            : undefined)}
+        >
+          <Pressable
+            accessibilityLabel={
+              selectedCustomer
+                ? `Selected customer ${selectedCustomer.name}`
+                : "Choose customer"
+            }
+            accessibilityRole="button"
+            className="min-h-11 flex-row items-center gap-2 rounded-xl bg-surface-muted px-3 active:bg-primary-soft"
+            onPress={openCustomerPicker}
+          >
+            <AppIcon
+              accessible={false}
+              name="profile"
+              color={selectedCustomer ? colors.primary : colors.iconMuted}
+              size={19}
+            />
+            <Text
+              className={
+                selectedCustomer
+                  ? "flex-1 text-sm font-bold text-foreground"
+                  : "flex-1 text-sm font-semibold text-muted"
+              }
+              numberOfLines={1}
+            >
+              {selectedCustomer?.name ?? "Choose customer"}
             </Text>
-          ) : null}
+            <Text className="text-lg text-primary">›</Text>
+          </Pressable>
         </View>
         <View
           {...(tutorialMode ? tour.getTargetProps("order-type") : undefined)}
@@ -512,7 +688,7 @@ function CatalogHeader({
           <Pressable
             accessibilityLabel="Choose order type"
             accessibilityRole="button"
-            className="min-h-11 flex-row items-center gap-1 rounded-full bg-surface-muted px-3 active:opacity-70"
+            className="min-h-11 flex-row items-center gap-1 rounded-xl bg-surface-muted px-3 active:bg-primary-soft"
             onPress={() => navigation.navigate("OrderTypePicker")}
           >
             <Text className="text-sm font-bold text-foreground">
@@ -523,80 +699,34 @@ function CatalogHeader({
         </View>
       </View>
 
-      <View
-        {...(tutorialMode ? tour.getTargetProps("order-customer") : undefined)}
-      >
-        <Pressable
-          accessibilityLabel={
-            selectedCustomer
-              ? `Selected customer ${selectedCustomer.name}`
-              : "Choose customer"
-          }
-          accessibilityRole="button"
-          className="min-h-11 flex-row items-center gap-3 rounded-xl bg-surface-muted px-3 active:opacity-70"
-          onPress={openCustomerPicker}
-        >
-          <AppIcon
-            accessible={false}
-            name="profile"
-            color={selectedCustomer ? colors.primary : colors.iconMuted}
-            size={20}
-          />
-          <View className="flex-1">
-            <Text
+      <View className="flex-row rounded-xl bg-surface-muted p-1">
+        {filters.map((option) => {
+          const selected = filter === option.value;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
               className={
-                selectedCustomer
-                  ? "text-sm font-bold text-foreground"
-                  : "text-sm font-semibold text-muted"
+                selected
+                  ? "min-h-11 flex-1 items-center justify-center rounded-lg bg-surface px-2"
+                  : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
               }
-              numberOfLines={1}
+              key={option.value}
+              onPress={() => onChangeFilter(option.value)}
             >
-              {selectedCustomer?.name ?? "Add customer"}
-            </Text>
-          </View>
-          <Text className="text-xl text-primary">›</Text>
-        </Pressable>
-      </View>
-
-      <View
-        className="gap-3"
-        {...(tutorialMode ? tour.getTargetProps("order-products") : undefined)}
-      >
-        <SearchField
-          onChangeText={onChangeSearch}
-          placeholder="Search product, SKU, size, or color"
-          showFilterIcon={false}
-          value={search}
-        />
-        <View className="flex-row rounded-xl bg-surface-muted p-1">
-          {filters.map((option) => {
-            const selected = filter === option.value;
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
+              <Text
                 className={
                   selected
-                    ? "min-h-11 flex-1 items-center justify-center rounded-lg bg-surface px-2"
-                    : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
+                    ? "text-sm font-bold text-foreground"
+                    : "text-sm font-semibold text-muted"
                 }
-                key={option.value}
-                onPress={() => onChangeFilter(option.value)}
               >
-                <Text
-                  className={
-                    selected
-                      ? "text-sm font-bold text-foreground"
-                      : "text-sm font-semibold text-muted"
-                  }
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -641,10 +771,9 @@ function CatalogScreen() {
     enabled: tutorialMode,
     steps: tutorial?.steps ?? [],
   });
-
   return (
     <View className="flex-1 bg-background" onLayout={startOnLayout}>
-      <CatalogHeader
+      <CatalogToolbar
         filter={productFilter}
         onChangeFilter={setProductFilter}
         onChangeSearch={setSearch}
@@ -653,11 +782,11 @@ function CatalogScreen() {
       />
 
       <LegendList
-        contentContainerStyle={{ padding: 16, paddingBottom: 112 }}
+        columnWrapperStyle={{ columnGap: 10, rowGap: 12 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 104 }}
         data={filteredVariants}
-        estimatedItemSize={96}
+        estimatedItemSize={220}
         extraData={quantities}
-        ItemSeparatorComponent={() => <View className="h-2" />}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         keyExtractor={(variant) => variant.id}
@@ -691,12 +820,13 @@ function CatalogScreen() {
           ) : null
         }
         maintainVisibleContentPosition
+        numColumns={2}
         recycleItems
-        renderItem={(props) => (
-          <ProductRow
-            {...props}
+        renderItem={({ item }) => (
+          <ProductGridCard
+            item={item}
             onChangeQuantity={changeQuantity}
-            quantity={quantities[props.item.id] ?? 0}
+            quantity={quantities[item.id] ?? 0}
             saleType={saleType}
           />
         )}
@@ -704,7 +834,7 @@ function CatalogScreen() {
       />
 
       <View
-        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-4 pb-safe-offset-2 pt-2"
+        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-3 pb-safe-offset-2 pt-2"
         {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
       >
         <View className="min-h-14 flex-row items-center gap-3">
@@ -723,8 +853,9 @@ function CatalogScreen() {
             disabled={itemCount === 0}
             onPress={() => navigation.navigate("Review")}
           >
-            <Text className="text-base font-bold text-on-primary">
-              Review order
+            <Text className="text-base font-bold text-on-primary">Review</Text>
+            <Text className="text-xs font-semibold text-primary-soft">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
             </Text>
           </Pressable>
         </View>
