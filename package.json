@@ -43,6 +43,7 @@
     "react-native-gesture-handler": "^3.0.2",
     "react-native-graph": "^1.2.0",
     "react-native-keyboard-controller": "1.21.9",
+    "react-native-livechart": "^4.9.1",
     "react-native-mmkv": "^4.3.2",
     "react-native-nano-icons": "0.2.1",
     "react-native-nitro-geolocation": "^1.4.2",
