@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
 import AppIcon from "../components/icons/AppIcon";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
@@ -35,12 +36,16 @@ const OperationTabs = createBottomTabNavigator({
     },
     Orders: {
       screen: OrdersStack,
-      options: {
+      options: ({ route }) => ({
         popToTopOnBlur: true,
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="operation" color={color} size={size} />
         ),
-      },
+        tabBarStyle:
+          getFocusedRouteNameFromRoute(route) === "NewOrder"
+            ? { display: "none" }
+            : undefined,
+      }),
     },
     Products: {
       screen: ProductsStack,

@@ -1,6 +1,5 @@
 import {
   LegendList,
-  type LegendListRef,
   type LegendListRenderItemProps,
 } from "@legendapp/list/react-native";
 import {
@@ -8,12 +7,29 @@ import {
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 import { ModalBottomSheet } from "@swmansion/react-native-bottom-sheet";
-import { useReducer, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  createContext,
+  type PropsWithChildren,
+  useContext,
+  useReducer,
+  useState,
+} from "react";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PosVariant } from "../../api/pos/queries";
+import type { PosCustomer, PosVariant } from "../../api/pos/queries";
 import {
   usePosCatalogQuery,
   usePosCustomersQuery,
@@ -28,6 +44,7 @@ import SearchField from "../../components/operations/SearchField";
 import LiveTutorialOverlay from "../../features/tutorial/LiveTutorialOverlay";
 import {
   findStaffTutorial,
+  type StaffTutorial,
   type StaffTutorialId,
 } from "../../features/tutorial/staffTutorials";
 import { useLiveTutorialController } from "../../features/tutorial/useLiveTutorialController";
@@ -37,6 +54,16 @@ type NewOrderRoute = RouteProp<
   { NewOrder: { tutorialId?: StaffTutorialId } | undefined },
   "NewOrder"
 >;
+
+type NewOrderFlowParamList = {
+  Catalog: undefined;
+  OrderTypePicker: undefined;
+  Review: undefined;
+};
+
+type FlowNavigation = NativeStackNavigationProp<NewOrderFlowParamList>;
+type ProductFilter = "all" | "available" | "selected";
+type SaleType = "preorder" | "sale";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
@@ -52,18 +79,51 @@ const paymentMethods: {
   { label: "Manual card", value: "card_manual" },
 ];
 
-const productSheetDetents: [number, "content"] = [0, "content"];
-
-type ProductFilter = "all" | "available" | "selected";
+const customerSheetDetents: [number, "content"] = [0, "content"];
 
 type OrderSelectionState = {
   quantities: Record<string, number>;
-  saleType: "preorder" | "sale";
+  saleType: SaleType;
 };
 
 type OrderSelectionAction =
-  | { saleType: "preorder" | "sale"; type: "changeSaleType" }
+  | { saleType: SaleType; type: "changeSaleType" }
   | { quantity: number; type: "changeQuantity"; variantId: string };
+
+type CartItem = {
+  quantity: number;
+  variant: PosVariant;
+};
+
+type OrderDraftContextValue = {
+  cart: CartItem[];
+  catalog: PosVariant[];
+  catalogState: "error" | "pending" | "ready";
+  changeQuantity: (variantId: string, nextQuantity: number) => void;
+  changeSaleType: (saleType: SaleType) => void;
+  closeCustomerPicker: () => void;
+  customerPickerOpen: boolean;
+  customers: PosCustomer[];
+  customersState: "error" | "pending" | "ready";
+  itemCount: number;
+  openCustomerPicker: () => void;
+  paymentMethod: PosPaymentMethod;
+  paymentTerms: PosPaymentTerms;
+  productFilter: ProductFilter;
+  quantities: Record<string, number>;
+  saleType: SaleType;
+  selectedCustomer: PosCustomer | undefined;
+  selectedCustomerId: string | undefined;
+  setPaymentMethod: (paymentMethod: PosPaymentMethod) => void;
+  setPaymentTerms: (paymentTerms: PosPaymentTerms) => void;
+  setProductFilter: (filter: ProductFilter) => void;
+  setSelectedCustomerId: (customerId: string | undefined) => void;
+  totalCents: number;
+  tutorial: StaffTutorial | null;
+  tutorialMode: boolean;
+};
+
+const OrderDraftContext = createContext<OrderDraftContextValue | null>(null);
 
 function orderSelectionReducer(
   state: OrderSelectionState,
@@ -86,72 +146,250 @@ function formatCurrency(cents: number): string {
   return currencyFormatter.format(cents / 100);
 }
 
-function OrderTypeSelector({
-  onChange,
-  value,
-}: {
-  onChange: (value: "preorder" | "sale") => void;
-  value: "preorder" | "sale";
-}) {
-  return (
-    <View className="flex-row rounded-2xl bg-surface-muted p-1">
-      {(["sale", "preorder"] as const).map((type) => {
-        const selected = value === type;
+function useOrderDraft() {
+  const context = useContext(OrderDraftContext);
 
-        return (
-          <Pressable
-            accessibilityLabel={`${type === "sale" ? "In-stock sale" : "Preorder"} order type`}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            className={
-              selected
-                ? "min-h-11 flex-1 items-center justify-center rounded-xl border border-border bg-surface"
-                : "min-h-11 flex-1 items-center justify-center rounded-xl"
-            }
-            key={type}
-            onPress={() => onChange(type)}
+  if (!context) {
+    throw new Error("useOrderDraft must be used within OrderDraftProvider.");
+  }
+
+  return context;
+}
+
+function OrderDraftProvider({
+  children,
+  tutorial,
+}: PropsWithChildren<{ tutorial: StaffTutorial | null }>) {
+  const customersQuery = usePosCustomersQuery();
+  const catalogQuery = usePosCatalogQuery();
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
+  const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
+  const [paymentTerms, setPaymentTerms] =
+    useState<PosPaymentTerms>("immediate");
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const [productFilter, setProductFilter] = useState<ProductFilter>(
+    tutorial?.id === "preorder" ? "all" : "available",
+  );
+  const [{ quantities, saleType }, dispatchSelection] = useReducer(
+    orderSelectionReducer,
+    {
+      quantities: {},
+      saleType: tutorial?.id === "preorder" ? "preorder" : "sale",
+    },
+  );
+
+  const catalog = catalogQuery.data ?? [];
+  const customers = customersQuery.data ?? [];
+  const cart = catalog.flatMap((variant) => {
+    const quantity = quantities[variant.id] ?? 0;
+
+    return quantity > 0 ? [{ quantity, variant }] : [];
+  });
+  const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const totalCents = cart.reduce(
+    (total, item) => total + item.quantity * item.variant.priceCents,
+    0,
+  );
+  const selectedCustomer = customers.find(
+    (customer) => customer.id === selectedCustomerId,
+  );
+
+  const changeQuantity = (variantId: string, nextQuantity: number) => {
+    dispatchSelection({
+      quantity: nextQuantity,
+      type: "changeQuantity",
+      variantId,
+    });
+  };
+
+  const changeSaleType = (nextSaleType: SaleType) => {
+    setProductFilter(nextSaleType === "preorder" ? "all" : "available");
+    dispatchSelection({ saleType: nextSaleType, type: "changeSaleType" });
+  };
+
+  return (
+    <OrderDraftContext.Provider
+      value={{
+        cart,
+        catalog,
+        catalogState: catalogQuery.isPending
+          ? "pending"
+          : catalogQuery.isError
+            ? "error"
+            : "ready",
+        changeQuantity,
+        changeSaleType,
+        closeCustomerPicker: () => setCustomerPickerOpen(false),
+        customerPickerOpen,
+        customers,
+        customersState: customersQuery.isPending
+          ? "pending"
+          : customersQuery.isError
+            ? "error"
+            : "ready",
+        itemCount,
+        openCustomerPicker: () => setCustomerPickerOpen(true),
+        paymentMethod,
+        paymentTerms,
+        productFilter,
+        quantities,
+        saleType,
+        selectedCustomer,
+        selectedCustomerId,
+        setPaymentMethod,
+        setPaymentTerms,
+        setProductFilter,
+        setSelectedCustomerId,
+        totalCents,
+        tutorial,
+        tutorialMode:
+          tutorial?.id === "sale-order" || tutorial?.id === "preorder",
+      }}
+    >
+      <View
+        accessibilityElementsHidden={customerPickerOpen}
+        className="flex-1"
+        importantForAccessibility={
+          customerPickerOpen ? "no-hide-descendants" : "auto"
+        }
+      >
+        {children}
+      </View>
+      <CustomerPickerSheet />
+    </OrderDraftContext.Provider>
+  );
+}
+
+function ProductRow({
+  item,
+  onChangeQuantity,
+  quantity,
+  saleType,
+}: LegendListRenderItemProps<PosVariant> & {
+  onChangeQuantity: (variantId: string, nextQuantity: number) => void;
+  quantity: number;
+  saleType: SaleType;
+}) {
+  const isPreorder = saleType === "preorder";
+  const maximumQuantity = isPreorder
+    ? Number.POSITIVE_INFINITY
+    : Math.max(item.stock, 0);
+  const availableQuantity = isPreorder
+    ? item.stock
+    : Math.max(item.stock - quantity, 0);
+  const stockLabel = isPreorder
+    ? `${availableQuantity} on hand`
+    : `${availableQuantity} left`;
+  const addButton = (
+    <Pressable
+      accessibilityLabel={`Add one ${item.name}`}
+      accessibilityRole="button"
+      accessibilityHint={
+        isPreorder
+          ? `${quantity} currently in order. Preorders can exceed stock on hand.`
+          : `${quantity} currently in order. ${availableQuantity} available.`
+      }
+      accessibilityState={{
+        disabled: maximumQuantity === 0 || quantity >= maximumQuantity,
+      }}
+      accessibilityValue={{ text: `${quantity} in order` }}
+      className={
+        quantity > 0
+          ? "h-11 w-11 items-center justify-center rounded-full bg-surface disabled:opacity-40 active:opacity-70"
+          : "h-11 w-11 items-center justify-center rounded-full bg-primary-soft disabled:opacity-40 active:opacity-70"
+      }
+      disabled={maximumQuantity === 0 || quantity >= maximumQuantity}
+      onPress={() => onChangeQuantity(item.id, quantity + 1)}
+    >
+      <Text className="text-xl font-semibold text-primary">+</Text>
+    </Pressable>
+  );
+
+  return (
+    <View
+      className={
+        quantity > 0
+          ? "rounded-xl bg-primary-soft p-3"
+          : "rounded-xl bg-surface p-3"
+      }
+    >
+      <View className="flex-row items-center gap-3">
+        <View
+          accessibilityElementsHidden
+          className="h-10 w-10 items-center justify-center rounded-lg bg-surface-muted"
+          importantForAccessibility="no-hide-descendants"
+        >
+          <AppIcon name="parcel" color={colors.iconMuted} size={20} />
+        </View>
+        <View className="flex-1">
+          <Text
+            className="text-base font-semibold text-foreground"
+            numberOfLines={1}
           >
-            <Text
-              className={
-                selected
-                  ? "font-bold text-foreground"
-                  : "font-semibold text-muted"
-              }
-            >
-              {type === "sale" ? "In-stock sale" : "Preorder"}
+            {item.name}
+          </Text>
+          <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+            {item.sku} · {item.size} · {item.color}
+          </Text>
+          <Text
+            className="mt-1 text-sm font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {formatCurrency(item.priceCents)}
+            <Text className="font-normal text-muted">{` · ${stockLabel}`}</Text>
+          </Text>
+          {isPreorder && item.stock === 0 ? (
+            <Text className="mt-1 text-xs font-semibold text-warning">
+              Preorder · no stock on hand
             </Text>
-          </Pressable>
-        );
-      })}
+          ) : null}
+        </View>
+        {quantity === 0 ? addButton : null}
+      </View>
+      {quantity > 0 ? (
+        <View className="mt-3 flex-row items-center justify-between border-t border-border pt-2">
+          <Text className="text-sm font-semibold text-muted">
+            {quantity} {quantity === 1 ? "item" : "items"} in order
+          </Text>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              accessibilityLabel={`Remove one ${item.name}`}
+              accessibilityRole="button"
+              accessibilityValue={{ text: `${quantity} in order` }}
+              className="h-11 w-11 items-center justify-center rounded-full bg-surface active:opacity-70"
+              onPress={() => onChangeQuantity(item.id, quantity - 1)}
+            >
+              <Text className="text-xl font-semibold text-foreground">−</Text>
+            </Pressable>
+            <Text className="min-w-5 text-center text-base font-bold text-foreground">
+              {quantity}
+            </Text>
+            {addButton}
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-function PaymentSelector({
-  onChange,
-  onChangeTerms,
-  terms,
-  value,
-}: {
-  onChange: (value: PosPaymentMethod) => void;
-  onChangeTerms: (value: PosPaymentTerms) => void;
-  terms: PosPaymentTerms;
-  value: PosPaymentMethod;
-}) {
+function PaymentSelector() {
+  const { paymentMethod, paymentTerms, setPaymentMethod, setPaymentTerms } =
+    useOrderDraft();
+
   return (
-    <View className="rounded-2xl border border-border bg-surface p-3">
-      <View className="mb-2 flex-row items-center gap-3">
-        <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
-          3 · Payment
+    <View className="rounded-xl bg-surface p-3">
+      <View className="mb-3 flex-row items-center justify-between gap-3">
+        <Text className="flex-1 text-base font-bold text-foreground">
+          Payment
         </Text>
-        <View className="flex-1 flex-row rounded-xl bg-surface-muted p-1">
+        <View className="flex-row rounded-lg bg-surface-muted p-1">
           {(
             [
               { label: "Paid now", value: "immediate" },
               { label: "Pay later", value: "credit" },
             ] as const
           ).map((option) => {
-            const selected = terms === option.value;
+            const selected = paymentTerms === option.value;
 
             return (
               <Pressable
@@ -159,17 +397,17 @@ function PaymentSelector({
                 accessibilityState={{ selected }}
                 className={
                   selected
-                    ? "min-h-11 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-2"
-                    : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
+                    ? "min-h-11 items-center justify-center rounded-md bg-surface px-3"
+                    : "min-h-11 items-center justify-center rounded-lg px-3"
                 }
                 key={option.value}
-                onPress={() => onChangeTerms(option.value)}
+                onPress={() => setPaymentTerms(option.value)}
               >
                 <Text
                   className={
                     selected
-                      ? "text-center text-sm font-bold text-foreground"
-                      : "text-center text-xs font-semibold text-muted"
+                      ? "text-xs font-bold text-foreground"
+                      : "text-xs font-semibold text-muted"
                   }
                 >
                   {option.label}
@@ -179,10 +417,10 @@ function PaymentSelector({
           })}
         </View>
       </View>
-      {terms === "immediate" ? (
-        <View className="flex-row gap-2">
+      {paymentTerms === "immediate" ? (
+        <View className="flex-row rounded-lg bg-surface-muted p-1">
           {paymentMethods.map((method) => {
-            const selected = value === method.value;
+            const selected = paymentMethod === method.value;
 
             return (
               <Pressable
@@ -190,16 +428,16 @@ function PaymentSelector({
                 accessibilityState={{ selected }}
                 className={
                   selected
-                    ? "min-h-11 flex-1 items-center justify-center rounded-xl border border-primary bg-primary-soft px-2"
-                    : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
+                    ? "min-h-11 flex-1 items-center justify-center rounded-md bg-surface px-2"
+                    : "min-h-11 flex-1 items-center justify-center rounded-md px-2"
                 }
                 key={method.value}
-                onPress={() => onChange(method.value)}
+                onPress={() => setPaymentMethod(method.value)}
               >
                 <Text
                   className={
                     selected
-                      ? "text-center text-xs font-bold text-primary"
+                      ? "text-center text-xs font-bold text-foreground"
                       : "text-center text-xs font-semibold text-muted"
                   }
                 >
@@ -219,105 +457,174 @@ function PaymentSelector({
   );
 }
 
-type ProductRowProps = LegendListRenderItemProps<PosVariant> & {
-  isPreorder: boolean;
-  onChangeQuantity: (variantId: string, nextQuantity: number) => void;
-  quantity: number;
-};
-
-function ProductRow({
-  isPreorder,
-  item,
-  onChangeQuantity,
-  quantity,
-}: ProductRowProps) {
-  const maximumQuantity = isPreorder
-    ? Number.POSITIVE_INFINITY
-    : Math.max(item.stock, 0);
-  const availableQuantity = isPreorder
-    ? item.stock
-    : Math.max(item.stock - quantity, 0);
+function CatalogHeader({
+  filter,
+  onChangeFilter,
+  onChangeSearch,
+  search,
+  tour,
+}: {
+  filter: ProductFilter;
+  onChangeFilter: (filter: ProductFilter) => void;
+  onChangeSearch: (search: string) => void;
+  search: string;
+  tour: ReturnType<typeof useLiveTutorialController>["tour"];
+}) {
+  const navigation = useNavigation<FlowNavigation>();
+  const {
+    itemCount,
+    openCustomerPicker,
+    saleType,
+    selectedCustomer,
+    tutorialMode,
+  } = useOrderDraft();
+  const filters: { label: string; value: ProductFilter }[] = [
+    { label: "All", value: "all" },
+    {
+      label: saleType === "preorder" ? "Stocked" : "In stock",
+      value: "available",
+    },
+    { label: `Selected ${itemCount}`, value: "selected" },
+  ];
 
   return (
-    <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-      <View className="h-12 w-12 items-center justify-center rounded-xl bg-surface-muted">
-        <AppIcon name="parcel" color={colors.iconMuted} size={22} />
-      </View>
-      <View className="flex-1">
-        <Text className="text-[15px] font-bold text-foreground">
-          {item.name}
-        </Text>
-        <Text className="mt-0.5 text-xs text-muted">
-          {item.sku} · {item.size} · {item.color}
-        </Text>
-        <Text className="mt-1 text-sm font-semibold text-muted">
-          {formatCurrency(item.priceCents)} · {availableQuantity} available
-        </Text>
-        {isPreorder ? (
-          <Text className="mt-1 text-xs font-bold uppercase text-warning">
-            Preorder · stock is not deducted now
-          </Text>
-        ) : null}
-      </View>
-      <View className="items-center gap-1.5">
-        <View className="flex-row items-center gap-2">
+    <View className="gap-3 border-b border-border bg-surface px-4 pb-3 pt-safe-offset-1">
+      <View className="flex-row items-center gap-2">
+        <Pressable
+          accessibilityLabel="Close new order"
+          accessibilityRole="button"
+          className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
+          onPress={() => navigation.getParent()?.goBack()}
+        >
+          <Text className="text-2xl text-foreground">‹</Text>
+        </Pressable>
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-foreground">New order</Text>
+          {tutorialMode ? (
+            <Text className="text-xs font-semibold text-warning">
+              Practice guide · Nothing will be saved
+            </Text>
+          ) : null}
+        </View>
+        <View
+          {...(tutorialMode ? tour.getTargetProps("order-type") : undefined)}
+        >
           <Pressable
-            accessibilityLabel={`Remove one ${item.name}`}
+            accessibilityLabel="Choose order type"
             accessibilityRole="button"
-            className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-muted disabled:opacity-40"
-            disabled={quantity === 0}
-            onPress={() => onChangeQuantity(item.id, quantity - 1)}
+            className="min-h-11 flex-row items-center gap-1 rounded-full bg-surface-muted px-3 active:opacity-70"
+            onPress={() => navigation.navigate("OrderTypePicker")}
           >
-            <Text className="text-xl font-semibold text-primary">−</Text>
+            <Text className="text-sm font-bold text-foreground">
+              {saleType === "preorder" ? "Preorder" : "Sale"}
+            </Text>
+            <Text className="text-base text-muted">⌄</Text>
           </Pressable>
-          <Text className="min-w-5 text-center text-base font-bold text-foreground">
-            {quantity}
-          </Text>
-          <Pressable
-            accessibilityLabel={`Add one ${item.name}`}
-            accessibilityRole="button"
-            className="h-11 w-11 items-center justify-center rounded-full border border-primary bg-primary-soft disabled:opacity-40"
-            disabled={maximumQuantity === 0 || quantity >= maximumQuantity}
-            onPress={() => onChangeQuantity(item.id, quantity + 1)}
-          >
-            <Text className="text-xl font-semibold text-primary">+</Text>
-          </Pressable>
+        </View>
+      </View>
+
+      <View
+        {...(tutorialMode ? tour.getTargetProps("order-customer") : undefined)}
+      >
+        <Pressable
+          accessibilityLabel={
+            selectedCustomer
+              ? `Selected customer ${selectedCustomer.name}`
+              : "Choose customer"
+          }
+          accessibilityRole="button"
+          className="min-h-11 flex-row items-center gap-3 rounded-xl bg-surface-muted px-3 active:opacity-70"
+          onPress={openCustomerPicker}
+        >
+          <AppIcon
+            accessible={false}
+            name="profile"
+            color={selectedCustomer ? colors.primary : colors.iconMuted}
+            size={20}
+          />
+          <View className="flex-1">
+            <Text
+              className={
+                selectedCustomer
+                  ? "text-sm font-bold text-foreground"
+                  : "text-sm font-semibold text-muted"
+              }
+              numberOfLines={1}
+            >
+              {selectedCustomer?.name ?? "Add customer"}
+            </Text>
+          </View>
+          <Text className="text-xl text-primary">›</Text>
+        </Pressable>
+      </View>
+
+      <View
+        className="gap-3"
+        {...(tutorialMode ? tour.getTargetProps("order-products") : undefined)}
+      >
+        <SearchField
+          onChangeText={onChangeSearch}
+          placeholder="Search product, SKU, size, or color"
+          showFilterIcon={false}
+          value={search}
+        />
+        <View className="flex-row rounded-xl bg-surface-muted p-1">
+          {filters.map((option) => {
+            const selected = filter === option.value;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                className={
+                  selected
+                    ? "min-h-11 flex-1 items-center justify-center rounded-lg bg-surface px-2"
+                    : "min-h-11 flex-1 items-center justify-center rounded-lg px-2"
+                }
+                key={option.value}
+                onPress={() => onChangeFilter(option.value)}
+              >
+                <Text
+                  className={
+                    selected
+                      ? "text-sm font-bold text-foreground"
+                      : "text-sm font-semibold text-muted"
+                  }
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     </View>
   );
 }
 
-function ProductPickerSheet({
-  catalog,
-  isOpen,
-  isPreorder,
-  onChangeQuantity,
-  onClose,
-  quantities,
-  state,
-}: {
-  catalog: PosVariant[];
-  isOpen: boolean;
-  isPreorder: boolean;
-  onChangeQuantity: (variantId: string, nextQuantity: number) => void;
-  onClose: () => void;
-  quantities: Record<string, number>;
-  state: "error" | "pending" | "ready";
-}) {
-  const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<ProductFilter>(
-    isPreorder ? "all" : "available",
-  );
+function CatalogScreen() {
+  const navigation = useNavigation<FlowNavigation>();
+  const {
+    catalog,
+    catalogState,
+    changeQuantity,
+    itemCount,
+    productFilter,
+    quantities,
+    saleType,
+    setProductFilter,
+    totalCents,
+    tutorial,
+    tutorialMode,
+  } = useOrderDraft();
   const [search, setSearch] = useState("");
-
   const query = search.trim().toLowerCase();
 
   const filteredVariants = catalog.filter((variant) => {
     const matchesFilter =
-      filter === "all" ||
-      (filter === "available" && variant.stock > 0) ||
-      (filter === "selected" && (quantities[variant.id] ?? 0) > 0);
+      productFilter === "all" ||
+      (productFilter === "available" && variant.stock > 0) ||
+      (productFilter === "selected" && (quantities[variant.id] ?? 0) > 0);
     const matchesSearch =
       !query ||
       [variant.name, variant.sku, variant.color, variant.size].some((value) =>
@@ -326,281 +633,388 @@ function ProductPickerSheet({
 
     return matchesFilter && matchesSearch;
   });
-
-  const selectedItemCount = catalog.reduce(
-    (total, variant) => total + (quantities[variant.id] ?? 0),
-    0,
-  );
-  const selectedTotalCents = catalog.reduce(
-    (total, variant) =>
-      total + (quantities[variant.id] ?? 0) * variant.priceCents,
-    0,
-  );
-  const filters: { label: string; value: ProductFilter }[] = [
-    { label: "All", value: "all" },
-    { label: isPreorder ? "Stocked" : "In stock", value: "available" },
-    { label: `Selected (${selectedItemCount})`, value: "selected" },
-  ];
-
-  return (
-    <ModalBottomSheet
-      detents={productSheetDetents}
-      index={isOpen ? 1 : 0}
-      onIndexChange={(nextIndex) => {
-        if (nextIndex === 0) onClose();
-      }}
-      scrimColor={colors.overlay}
-      surface={<View style={styles.productSheetSurface} />}
-    >
-      <View
-        accessibilityViewIsModal
-        className="flex-1 overflow-hidden rounded-t-[28px] bg-surface"
-      >
-        <View className="items-center pb-1 pt-2">
-          <View className="h-1 w-10 rounded-full bg-border" />
-        </View>
-        <View className="flex-row items-center gap-3 border-b border-border px-4 pb-3 pt-1">
-          <View className="flex-1">
-            <Text className="text-xl font-bold text-foreground">
-              Add products
-            </Text>
-            <Text className="mt-0.5 text-sm text-muted">
-              {isPreorder
-                ? "Choose any variant, even when stock is zero."
-                : "Choose variants currently available to sell."}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityLabel="Close product picker"
-            accessibilityRole="button"
-            className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted active:opacity-70"
-            onPress={onClose}
-          >
-            <Text className="text-2xl leading-7 text-foreground">×</Text>
-          </Pressable>
-        </View>
-
-        <View className="gap-3 border-b border-border bg-surface px-4 py-3">
-          <SearchField
-            onChangeText={setSearch}
-            placeholder="Search name, SKU, size, or color"
-            value={search}
-          />
-          <ScrollView
-            horizontal
-            keyboardShouldPersistTaps="handled"
-            showsHorizontalScrollIndicator={false}
-          >
-            <View className="flex-row gap-2">
-              {filters.map((option) => {
-                const selected = filter === option.value;
-
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    className={
-                      selected
-                        ? "min-h-11 items-center justify-center rounded-full border border-primary bg-primary-soft px-4"
-                        : "min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4"
-                    }
-                    key={option.value}
-                    onPress={() => setFilter(option.value)}
-                  >
-                    <Text
-                      className={
-                        selected
-                          ? "text-sm font-bold text-primary"
-                          : "text-sm font-semibold text-muted"
-                      }
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
-
-        <LegendList
-          contentContainerStyle={{ padding: 16 }}
-          data={filteredVariants}
-          estimatedItemSize={104}
-          extraData={quantities}
-          ItemSeparatorComponent={() => <View className="h-3" />}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          keyExtractor={(variant) => variant.id}
-          ListEmptyComponent={
-            <View className="rounded-2xl border border-border bg-surface-muted p-6">
-              <Text className="text-center text-sm font-semibold text-muted">
-                {state === "pending"
-                  ? "Loading products…"
-                  : state === "error"
-                    ? "Products could not be loaded. Close this picker and try again."
-                    : filter === "selected"
-                      ? "No products selected yet."
-                      : "No variants match this search and filter."}
-              </Text>
-            </View>
-          }
-          maintainVisibleContentPosition
-          recycleItems
-          renderItem={(props) => (
-            <ProductRow
-              {...props}
-              isPreorder={isPreorder}
-              onChangeQuantity={onChangeQuantity}
-              quantity={quantities[props.item.id] ?? 0}
-            />
-          )}
-          showsVerticalScrollIndicator={false}
-        />
-
-        <View
-          className="border-t border-border bg-surface px-4 pt-3"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-        >
-          <Pressable
-            accessibilityLabel={`Done choosing products, ${selectedItemCount} items selected`}
-            accessibilityRole="button"
-            className="min-h-14 flex-row items-center justify-between rounded-2xl bg-primary px-5 active:bg-primary-pressed"
-            onPress={onClose}
-          >
-            <View>
-              <Text className="text-xs font-semibold text-primary-soft">
-                Done choosing products
-              </Text>
-              <Text className="text-base font-bold text-on-primary">
-                {selectedItemCount} {selectedItemCount === 1 ? "item" : "items"}
-              </Text>
-            </View>
-            <Text className="text-xl font-bold text-on-primary">
-              {formatCurrency(selectedTotalCents)}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    </ModalBottomSheet>
-  );
-}
-
-function OrderScreenHeader({
-  itemCount,
-  onBack,
-  saleType,
-  tutorialMode,
-}: {
-  itemCount: number;
-  onBack: () => void;
-  saleType: "preorder" | "sale";
-  tutorialMode: boolean;
-}) {
-  return (
-    <View className="flex-row items-center gap-2 px-4 pb-2 pt-1">
-      <Pressable
-        accessibilityLabel="Back to orders"
-        accessibilityRole="button"
-        className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted active:opacity-70"
-        onPress={onBack}
-      >
-        <Text className="text-2xl text-foreground">‹</Text>
-      </Pressable>
-      <View className="flex-1">
-        <Text className="text-xl font-bold text-foreground">
-          {saleType === "preorder" ? "New preorder" : "New sale"}
-        </Text>
-        {tutorialMode ? (
-          <Text className="text-xs font-semibold text-warning">
-            Practice guide · Nothing will be saved
-          </Text>
-        ) : null}
-      </View>
-      <View className="rounded-full bg-surface-muted px-2.5 py-1.5">
-        <Text className="text-xs font-bold text-subtle">
-          {itemCount} {itemCount === 1 ? "item" : "items"}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-export default function NewOrderScreen() {
-  const navigation = useNavigation();
-  const route = useRoute<NewOrderRoute>();
-  const listRef = useRef<LegendListRef | null>(null);
-  const tutorial = route.params?.tutorialId
-    ? findStaffTutorial(route.params.tutorialId)
-    : null;
-  const tutorialMode =
-    tutorial?.id === "sale-order" || tutorial?.id === "preorder";
-  const customersQuery = usePosCustomersQuery();
-  const catalogQuery = usePosCatalogQuery();
-  const checkoutMutation = usePosCheckoutMutation();
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
-  const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
-  const [paymentTerms, setPaymentTerms] =
-    useState<PosPaymentTerms>("immediate");
-  const [productPickerOpen, setProductPickerOpen] = useState(false);
-  const [{ quantities, saleType }, dispatchSelection] = useReducer(
-    orderSelectionReducer,
-    {
-      quantities: {},
-      saleType: tutorial?.id === "preorder" ? "preorder" : "sale",
-    },
-  );
   const {
     showStep: showTutorialStep,
     startOnLayout,
     tour,
   } = useLiveTutorialController({
     enabled: tutorialMode,
-    onBeforeStep: (index) => {
-      if (index < 2) {
-        void listRef.current?.scrollToOffset({ animated: true, offset: 0 });
-      } else if (index === 2) {
-        void listRef.current?.scrollToOffset({
-          animated: true,
-          offset: 180,
-        });
-      }
-    },
     steps: tutorial?.steps ?? [],
   });
 
-  const cart = (catalogQuery.data ?? []).flatMap((variant) => {
-    const quantity = quantities[variant.id] ?? 0;
+  return (
+    <View className="flex-1 bg-background" onLayout={startOnLayout}>
+      <CatalogHeader
+        filter={productFilter}
+        onChangeFilter={setProductFilter}
+        onChangeSearch={setSearch}
+        search={search}
+        tour={tour}
+      />
 
-    return quantity > 0 ? [{ quantity, variant }] : [];
-  });
-  const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const totalCents = cart.reduce(
-    (total, item) => total + item.quantity * item.variant.priceCents,
-    0,
+      <LegendList
+        contentContainerStyle={{ padding: 16, paddingBottom: 112 }}
+        data={filteredVariants}
+        estimatedItemSize={96}
+        extraData={quantities}
+        ItemSeparatorComponent={() => <View className="h-2" />}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        keyExtractor={(variant) => variant.id}
+        ListEmptyComponent={
+          <View className="rounded-2xl border border-border bg-surface-muted p-6">
+            <Text className="text-center text-sm font-semibold text-muted">
+              {catalogState === "pending"
+                ? "Loading products…"
+                : catalogState === "error"
+                  ? "Products could not be loaded. Check the connection and try again."
+                  : productFilter === "selected"
+                    ? "No products selected yet."
+                    : "No variants match this search and filter."}
+            </Text>
+          </View>
+        }
+        ListHeaderComponent={
+          saleType === "preorder" ? (
+            <View className="mb-3 flex-row gap-2 rounded-xl bg-surface p-3">
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <AppIcon name="calendar" color={colors.primary} size={18} />
+              </View>
+              <Text className="flex-1 text-sm leading-5 text-muted">
+                Preorders can include zero-stock products. Inventory is deducted
+                only when the order is fulfilled.
+              </Text>
+            </View>
+          ) : null
+        }
+        maintainVisibleContentPosition
+        recycleItems
+        renderItem={(props) => (
+          <ProductRow
+            {...props}
+            onChangeQuantity={changeQuantity}
+            quantity={quantities[props.item.id] ?? 0}
+            saleType={saleType}
+          />
+        )}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <View
+        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-4 pb-safe-offset-2 pt-2"
+        {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
+      >
+        <View className="min-h-14 flex-row items-center gap-3">
+          <View className="flex-1">
+            <Text className="text-xs font-semibold text-muted">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </Text>
+            <Text className="text-lg font-bold text-foreground">
+              {formatCurrency(totalCents)}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel={`Review order with ${itemCount} items`}
+            accessibilityRole="button"
+            className="min-h-12 min-w-36 items-center justify-center rounded-xl bg-primary px-5 disabled:opacity-40 active:bg-primary-pressed"
+            disabled={itemCount === 0}
+            onPress={() => navigation.navigate("Review")}
+          >
+            <Text className="text-base font-bold text-on-primary">
+              Review order
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {tutorialMode ? (
+        <LiveTutorialOverlay
+          onClose={() => navigation.getParent()?.goBack()}
+          onStepChange={showTutorialStep}
+          tour={tour}
+        />
+      ) : null}
+    </View>
   );
-  const selectedVariants = cart.map(({ variant }) => variant);
+}
+
+function CustomerPickerSheet() {
+  const { height } = useWindowDimensions();
+  const {
+    closeCustomerPicker,
+    customerPickerOpen,
+    customers,
+    customersState,
+    selectedCustomerId,
+    setSelectedCustomerId,
+  } = useOrderDraft();
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLowerCase();
+  const filteredCustomers = customers.filter((customer) =>
+    [customer.name, customer.detail].some((value) =>
+      value.toLowerCase().includes(query),
+    ),
+  );
+
+  return (
+    <ModalBottomSheet
+      detents={customerSheetDetents}
+      index={customerPickerOpen ? 1 : 0}
+      onIndexChange={(nextIndex) => {
+        if (nextIndex === 0) closeCustomerPicker();
+      }}
+      scrimColor={colors.overlay}
+      surface={<View style={styles.sheetSurface} />}
+    >
+      <View
+        accessibilityViewIsModal
+        className="overflow-hidden rounded-t-[28px] bg-surface"
+        style={{ height: height * 0.88 }}
+      >
+        <LegendList
+          contentContainerStyle={{ paddingBottom: 32 }}
+          data={filteredCustomers}
+          estimatedItemSize={72}
+          ItemSeparatorComponent={() => (
+            <View className="mx-16 h-px bg-border" />
+          )}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={(customer) => customer.id}
+          ListEmptyComponent={
+            <View className="px-4">
+              <View className="rounded-2xl bg-surface-muted p-6">
+                <Text className="text-center text-sm font-semibold text-muted">
+                  {customersState === "pending"
+                    ? "Loading customers…"
+                    : customersState === "error"
+                      ? "Customers could not be loaded. Check the connection and try again."
+                      : "No customers match this search."}
+                </Text>
+              </View>
+            </View>
+          }
+          ListHeaderComponent={
+            <View className="mb-3 bg-surface">
+              <View className="flex-row items-center gap-3 border-b border-border px-4 pb-3 pt-3">
+                <View className="flex-1">
+                  <Text className="text-xl font-bold text-foreground">
+                    Choose customer
+                  </Text>
+                  <Text className="mt-0.5 text-sm text-muted">
+                    Search by name, phone, or email.
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close customer picker"
+                  accessibilityRole="button"
+                  className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted active:opacity-70"
+                  onPress={closeCustomerPicker}
+                >
+                  <Text className="text-2xl leading-7 text-foreground">×</Text>
+                </Pressable>
+              </View>
+              <View className="px-4 py-3">
+                <SearchField
+                  onChangeText={setSearch}
+                  placeholder="Search customers"
+                  showFilterIcon={false}
+                  value={search}
+                />
+              </View>
+            </View>
+          }
+          recycleItems
+          renderItem={({ item }) => {
+            const selected = item.id === selectedCustomerId;
+
+            return (
+              <View className="px-4">
+                <Pressable
+                  accessibilityLabel={`Choose ${item.name}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  className={
+                    selected
+                      ? "min-h-16 flex-row items-center gap-3 rounded-xl bg-primary-soft p-3"
+                      : "min-h-16 flex-row items-center gap-3 rounded-xl bg-surface p-3 active:bg-surface-muted"
+                  }
+                  onPress={() => {
+                    setSelectedCustomerId(item.id);
+                    closeCustomerPicker();
+                  }}
+                >
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted">
+                    <AppIcon
+                      accessible={false}
+                      name="profile"
+                      color={colors.iconMuted}
+                      size={19}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className="font-bold text-foreground"
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      className="mt-0.5 text-xs text-muted"
+                      numberOfLines={1}
+                    >
+                      {item.detail}
+                    </Text>
+                  </View>
+                  {selected ? (
+                    <Text className="text-lg font-bold text-primary">✓</Text>
+                  ) : (
+                    <Text className="text-xl text-primary">›</Text>
+                  )}
+                </Pressable>
+              </View>
+            );
+          }}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
+    </ModalBottomSheet>
+  );
+}
+
+function OrderTypePickerScreen() {
+  const navigation = useNavigation<FlowNavigation>();
+  const { changeSaleType, itemCount, saleType } = useOrderDraft();
+  const insets = useSafeAreaInsets();
+
+  const selectType = (nextSaleType: SaleType) => {
+    if (nextSaleType === saleType) {
+      navigation.goBack();
+      return;
+    }
+
+    const applyChange = () => {
+      changeSaleType(nextSaleType);
+      navigation.goBack();
+    };
+
+    if (itemCount === 0) {
+      applyChange();
+      return;
+    }
+
+    Alert.alert(
+      "Change order type?",
+      `Changing to ${nextSaleType === "preorder" ? "Preorder" : "In-stock sale"} clears the ${itemCount} ${itemCount === 1 ? "item" : "items"} currently selected.`,
+      [
+        { style: "cancel", text: "Keep current order" },
+        {
+          onPress: applyChange,
+          style: "destructive",
+          text: "Change and clear",
+        },
+      ],
+    );
+  };
+
+  const options: {
+    description: string;
+    label: string;
+    value: SaleType;
+  }[] = [
+    {
+      description: "Sell available products and deduct stock when confirmed.",
+      label: "In-stock sale",
+      value: "sale",
+    },
+    {
+      description:
+        "Accept zero-stock products and deduct inventory after fulfillment.",
+      label: "Preorder",
+      value: "preorder",
+    },
+  ];
+
+  return (
+    <View
+      className="bg-surface px-4 pt-3"
+      style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+    >
+      <Text className="text-xl font-bold text-foreground">Order type</Text>
+      <Text className="mb-4 mt-1 text-sm leading-5 text-muted">
+        Choose when inventory should be deducted.
+      </Text>
+      <View className="gap-3">
+        {options.map((option) => {
+          const selected = option.value === saleType;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              className={
+                selected
+                  ? "min-h-20 flex-row gap-3 rounded-xl bg-primary-soft p-4"
+                  : "min-h-20 flex-row gap-3 rounded-xl bg-surface-muted p-4 active:opacity-70"
+              }
+              key={option.value}
+              onPress={() => selectType(option.value)}
+            >
+              <View
+                className={
+                  selected
+                    ? "mt-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-primary"
+                    : "mt-0.5 h-5 w-5 rounded-full border-2 border-border"
+                }
+              >
+                {selected ? (
+                  <View className="h-2.5 w-2.5 rounded-full bg-primary" />
+                ) : null}
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-foreground">
+                  {option.label}
+                </Text>
+                <Text className="mt-1 text-sm leading-5 text-muted">
+                  {option.description}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function ReviewScreen() {
+  const navigation = useNavigation<FlowNavigation>();
+  const {
+    cart,
+    changeQuantity,
+    itemCount,
+    openCustomerPicker,
+    paymentMethod,
+    paymentTerms,
+    quantities,
+    saleType,
+    selectedCustomer,
+    selectedCustomerId,
+    totalCents,
+    tutorialMode,
+  } = useOrderDraft();
+  const checkoutMutation = usePosCheckoutMutation();
   const canCheckout =
     !tutorialMode &&
     Boolean(selectedCustomerId) &&
     itemCount > 0 &&
     !checkoutMutation.isPending;
 
-  const changeQuantity = (variantId: string, nextQuantity: number) => {
-    dispatchSelection({
-      quantity: nextQuantity,
-      type: "changeQuantity",
-      variantId,
-    });
-  };
-
-  const changeSaleType = (type: "preorder" | "sale") => {
-    dispatchSelection({ saleType: type, type: "changeSaleType" });
-  };
-
   const handleCheckout = async () => {
-    if (tutorialMode) return;
-    if (!selectedCustomerId || itemCount === 0) return;
+    if (!canCheckout || !selectedCustomerId) return;
 
     try {
       await checkoutMutation.mutateAsync({
@@ -614,187 +1028,128 @@ export default function NewOrderScreen() {
         saleType,
         totalCents,
       });
-      navigation.goBack();
+      navigation.getParent()?.goBack();
     } catch {
       // The mutation state renders a safe, actionable error below.
     }
   };
 
   return (
-    <View className="flex-1 bg-background pt-safe" onLayout={startOnLayout}>
-      <View
-        accessibilityElementsHidden={productPickerOpen}
-        importantForAccessibility={
-          productPickerOpen ? "no-hide-descendants" : "auto"
-        }
-      >
-        <OrderScreenHeader
-          itemCount={itemCount}
-          onBack={() => navigation.goBack()}
-          saleType={saleType}
-          tutorialMode={tutorialMode}
-        />
+    <View className="flex-1 bg-background pt-safe">
+      <View className="flex-row items-center gap-3 px-4 pb-3 pt-1">
+        <Pressable
+          accessibilityLabel="Back to products"
+          accessibilityRole="button"
+          className="h-11 w-11 items-center justify-center rounded-full active:bg-surface-muted"
+          onPress={() => navigation.goBack()}
+        >
+          <Text className="text-2xl text-foreground">‹</Text>
+        </Pressable>
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-foreground">
+            Review order
+          </Text>
+          <Text className="text-xs font-semibold text-muted">
+            {saleType === "preorder" ? "Preorder" : "In-stock sale"} ·{" "}
+            {itemCount} {itemCount === 1 ? "item" : "items"}
+          </Text>
+        </View>
+        <Text className="text-lg font-bold text-foreground">
+          {formatCurrency(totalCents)}
+        </Text>
       </View>
 
       <LegendList
-        accessibilityElementsHidden={productPickerOpen}
-        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
-        data={selectedVariants}
-        estimatedItemSize={104}
+        contentContainerStyle={{ padding: 16, paddingBottom: 124 }}
+        data={cart.map(({ variant }) => variant)}
+        estimatedItemSize={96}
         extraData={quantities}
-        importantForAccessibility={
-          productPickerOpen ? "no-hide-descendants" : "auto"
-        }
-        ItemSeparatorComponent={() => <View className="h-3" />}
+        ItemSeparatorComponent={() => <View className="h-2" />}
         keyExtractor={(variant) => variant.id}
-        ListHeaderComponent={
-          <View className="mb-3 gap-3">
-            <View
-              {...(tutorialMode
-                ? tour.getTargetProps("order-type")
-                : undefined)}
-            >
-              <OrderTypeSelector onChange={changeSaleType} value={saleType} />
-            </View>
-            <View
-              {...(tutorialMode
-                ? tour.getTargetProps("order-customer")
-                : undefined)}
-            >
-              <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-                1 · Customer
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row gap-2">
-                  {(customersQuery.data ?? []).map((customer) => {
-                    const selected = selectedCustomerId === customer.id;
-
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        className={
-                          selected
-                            ? "min-w-40 rounded-2xl border border-primary bg-primary-soft p-3"
-                            : "min-w-40 rounded-2xl border border-border bg-surface p-3"
-                        }
-                        key={customer.id}
-                        onPress={() => setSelectedCustomerId(customer.id)}
-                      >
-                        <Text className="font-bold text-foreground">
-                          {customer.name}
-                        </Text>
-                        <Text
-                          className="mt-1 text-xs text-muted"
-                          numberOfLines={1}
-                        >
-                          {customer.detail}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-              {customersQuery.isError ? (
-                <Text className="mt-2 text-sm text-danger">
-                  Customers could not be loaded. Pull back and try again.
-                </Text>
-              ) : null}
-            </View>
-
-            <View
-              {...(tutorialMode
-                ? tour.getTargetProps("order-products")
-                : undefined)}
-            >
-              <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-                2 · Products
-              </Text>
-              <Pressable
-                accessibilityLabel="Browse and choose products"
-                accessibilityRole="button"
-                className="min-h-20 flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4 active:bg-surface-muted"
-                onPress={() => setProductPickerOpen(true)}
-              >
-                <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-soft">
-                  <AppIcon name="scan" color={colors.primary} size={22} />
+        ListFooterComponent={
+          <View className="gap-3 pt-4">
+            {saleType === "sale" ? (
+              <PaymentSelector />
+            ) : (
+              <View className="flex-row gap-2 rounded-xl bg-surface p-4">
+                <View
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
+                  <AppIcon name="calendar" color={colors.primary} size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-bold text-foreground">
-                    Browse products
+                  <Text className="font-bold text-foreground">
+                    Payment after fulfillment
                   </Text>
-                  <Text className="mt-0.5 text-sm text-muted">
-                    {itemCount > 0
-                      ? `${itemCount} ${itemCount === 1 ? "item" : "items"} selected · Search to add more`
-                      : "Search and filter the full catalog"}
+                  <Text className="mt-1 text-sm leading-5 text-muted">
+                    Confirm the request now. Allocate stock and record payment
+                    when the products arrive.
                   </Text>
                 </View>
-                <Text className="text-2xl text-primary">›</Text>
-              </Pressable>
-            </View>
-          </View>
-        }
-        ListFooterComponent={
-          <View className="pb-4 pt-1">
-            {saleType === "sale" ? (
-              <PaymentSelector
-                onChange={setPaymentMethod}
-                onChangeTerms={setPaymentTerms}
-                terms={paymentTerms}
-                value={paymentMethod}
-              />
-            ) : (
-              <View className="rounded-2xl border border-border bg-surface p-3">
-                <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
-                  3 · Payment
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-muted">
-                  Payment and inventory are recorded after the preorder is
-                  fulfilled.
-                </Text>
               </View>
             )}
           </View>
         }
+        ListHeaderComponent={
+          <View className="mb-4 gap-4">
+            <View>
+              <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
+                Customer
+              </Text>
+              <Pressable
+                accessibilityLabel={
+                  selectedCustomer
+                    ? `Change customer ${selectedCustomer.name}`
+                    : "Choose customer before confirming"
+                }
+                accessibilityRole="button"
+                className={
+                  selectedCustomer
+                    ? "min-h-16 flex-row items-center gap-3 rounded-xl bg-surface p-3 active:bg-surface-muted"
+                    : "min-h-16 flex-row items-center gap-3 rounded-xl bg-surface p-3 active:bg-surface-muted"
+                }
+                onPress={openCustomerPicker}
+              >
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted">
+                  <AppIcon
+                    accessible={false}
+                    name="profile"
+                    color={colors.iconMuted}
+                    size={19}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-foreground">
+                    {selectedCustomer?.name ?? "Choose customer"}
+                  </Text>
+                  <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+                    {selectedCustomer?.detail ??
+                      "A customer is required to track payments and balance."}
+                  </Text>
+                </View>
+                <Text className="text-xl text-primary">›</Text>
+              </Pressable>
+            </View>
+            <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+              Items
+            </Text>
+          </View>
+        }
         maintainVisibleContentPosition
-        ref={listRef}
         recycleItems
         renderItem={(props) => (
           <ProductRow
             {...props}
-            isPreorder={saleType === "preorder"}
             onChangeQuantity={changeQuantity}
             quantity={quantities[props.item.id] ?? 0}
+            saleType={saleType}
           />
         )}
         showsVerticalScrollIndicator={false}
       />
 
-      <ProductPickerSheet
-        catalog={catalogQuery.data ?? []}
-        isOpen={productPickerOpen}
-        isPreorder={saleType === "preorder"}
-        key={saleType}
-        onChangeQuantity={changeQuantity}
-        onClose={() => setProductPickerOpen(false)}
-        quantities={quantities}
-        state={
-          catalogQuery.isPending
-            ? "pending"
-            : catalogQuery.isError
-              ? "error"
-              : "ready"
-        }
-      />
-
-      <View
-        {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
-        accessibilityElementsHidden={productPickerOpen}
-        className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-4 pb-safe-offset-2 pt-2"
-        importantForAccessibility={
-          productPickerOpen ? "no-hide-descendants" : "auto"
-        }
-      >
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-4 pb-safe-offset-2 pt-2">
         {checkoutMutation.isError ? (
           <Text accessibilityRole="alert" className="mb-2 text-sm text-danger">
             {saleType === "preorder" ? "Preorder" : "Sale"} could not be
@@ -828,7 +1183,7 @@ export default function NewOrderScreen() {
                 ? "No order will be created"
                 : selectedCustomerId
                   ? `${itemCount} ${itemCount === 1 ? "item" : "items"}`
-                  : "Select a customer"}
+                  : "Choose a customer"}
             </Text>
           </View>
           <Text className="text-xl font-bold text-on-primary">
@@ -836,19 +1191,54 @@ export default function NewOrderScreen() {
           </Text>
         </Pressable>
       </View>
-      {tutorialMode ? (
-        <LiveTutorialOverlay
-          onClose={() => navigation.goBack()}
-          onStepChange={showTutorialStep}
-          tour={tour}
-        />
-      ) : null}
     </View>
   );
 }
 
+const FlowStack = createNativeStackNavigator<NewOrderFlowParamList>();
+
+function NewOrderFlow() {
+  return (
+    <FlowStack.Navigator
+      initialRouteName="Catalog"
+      screenOptions={{
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: colors.background },
+        headerShown: false,
+      }}
+    >
+      <FlowStack.Screen component={CatalogScreen} name="Catalog" />
+      <FlowStack.Screen component={ReviewScreen} name="Review" />
+      <FlowStack.Screen
+        component={OrderTypePickerScreen}
+        name="OrderTypePicker"
+        options={{
+          contentStyle: { backgroundColor: colors.surface },
+          presentation: "formSheet",
+          sheetAllowedDetents: "fitToContents",
+          sheetCornerRadius: 28,
+          sheetGrabberVisible: true,
+        }}
+      />
+    </FlowStack.Navigator>
+  );
+}
+
+export default function NewOrderScreen() {
+  const route = useRoute<NewOrderRoute>();
+  const tutorial = route.params?.tutorialId
+    ? findStaffTutorial(route.params.tutorialId)
+    : null;
+
+  return (
+    <OrderDraftProvider tutorial={tutorial}>
+      <NewOrderFlow />
+    </OrderDraftProvider>
+  );
+}
+
 const styles = StyleSheet.create({
-  productSheetSurface: {
+  sheetSurface: {
     ...StyleSheet.absoluteFill,
     backgroundColor: colors.surface,
     borderTopLeftRadius: 28,
