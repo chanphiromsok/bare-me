@@ -263,6 +263,10 @@ export type Payment = {
         /**
          * Field included by default.
          */
+        external_reference?: string | null | unknown;
+        /**
+         * Field included by default.
+         */
         method: 'cash' | 'bank_transfer' | 'card_manual' | 'other';
         /**
          * Field included by default.
@@ -596,6 +600,24 @@ export type OrderFilterPaymentState = {
  * Filters the query to results matching the given filter object
  */
 export type CustomerFilter = unknown;
+
+export type PaymentFilterExternalReference = {
+    contains?: string;
+    eq?: string;
+    greater_than?: string;
+    greater_than_or_equal?: string;
+    ilike?: string;
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: string;
+    less_than_or_equal?: string;
+    like?: string;
+    not_eq?: string;
+    string_ends_with?: string;
+    string_starts_with?: string;
+};
 
 export type ProductFilterId = {
     eq?: string;
@@ -2727,6 +2749,7 @@ export type PostApiOrdersByOrderIdPaymentsData = {
         data: {
             attributes?: {
                 amount_cents: number;
+                external_reference?: string | unknown;
                 method: 'cash' | 'bank_transfer' | 'card_manual' | 'other';
                 note?: string | unknown;
             };
