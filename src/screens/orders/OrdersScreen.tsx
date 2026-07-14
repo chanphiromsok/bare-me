@@ -9,7 +9,6 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import AppIcon from "../../components/icons/AppIcon";
-import OperationsHeader from "../../components/operations/OperationsHeader";
 import SearchField from "../../components/operations/SearchField";
 import StatusPill from "../../components/operations/StatusPill";
 import {
@@ -134,10 +133,6 @@ export default function OrdersScreen() {
 
   return (
     <View className="flex-1 bg-background pt-safe">
-      <OperationsHeader
-        title="Orders"
-        subtitle="Review, confirm, pay, and fulfill orders."
-      />
       <LegendList
         contentContainerStyle={{ paddingBottom: 112, paddingHorizontal: 20 }}
         data={orders}
@@ -147,7 +142,7 @@ export default function OrdersScreen() {
         keyExtractor={(order) => order.number}
         ListEmptyComponent={emptyState}
         ListHeaderComponent={
-          <View className="mb-4 gap-4">
+          <View className="mb-4 gap-4 pt-2">
             <SearchField
               onChangeText={setSearch}
               placeholder="Search order or customer"
