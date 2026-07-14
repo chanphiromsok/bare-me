@@ -393,6 +393,7 @@ export default function NewOrderScreen() {
         contentContainerStyle={{ paddingBottom: 224, paddingHorizontal: 20 }}
         data={variants}
         estimatedItemSize={104}
+        extraData={quantities}
         ItemSeparatorComponent={() => <View className="h-3" />}
         keyExtractor={(variant) => variant.id}
         ListEmptyComponent={
