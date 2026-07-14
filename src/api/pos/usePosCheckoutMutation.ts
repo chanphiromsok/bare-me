@@ -21,6 +21,7 @@ import {
 import { posQueryKeys } from "./queries";
 
 export type PosPaymentMethod = "bank_transfer" | "card_manual" | "cash";
+export type PosPaymentTerms = "credit" | "immediate";
 
 export type PosCheckoutInput = {
   customerId: string;
@@ -29,6 +30,7 @@ export type PosCheckoutInput = {
     quantity: number;
   }[];
   paymentMethod: PosPaymentMethod;
+  paymentTerms: PosPaymentTerms;
   saleType: "preorder" | "sale";
   totalCents: number;
 };
@@ -45,6 +47,7 @@ function checkoutFingerprint(input: PosCheckoutInput): string {
       left.productVariantId.localeCompare(right.productVariantId),
     ),
     paymentMethod: input.paymentMethod,
+    paymentTerms: input.paymentTerms,
     saleType: input.saleType,
     totalCents: input.totalCents,
   });
@@ -83,6 +86,7 @@ async function createOrRecoverOrder(
             customer_id: input.customerId,
             external_reference: externalReference,
             order_kind: input.saleType,
+            payment_terms: input.paymentTerms,
             sales_channel: input.saleType === "preorder" ? "group_chat" : "pos",
           },
           type: "order",
@@ -173,23 +177,25 @@ export function usePosCheckoutMutation() {
         throw new Error("This sale can no longer be completed.");
       }
 
-      try {
-        await postApiOrdersByOrderIdPayments({
-          body: {
-            data: {
-              attributes: {
-                amount_cents: input.totalCents,
-                external_reference: paymentReference,
-                method: input.paymentMethod,
-                note: "Recorded from staff POS",
+      if (input.paymentTerms === "immediate") {
+        try {
+          await postApiOrdersByOrderIdPayments({
+            body: {
+              data: {
+                attributes: {
+                  amount_cents: input.totalCents,
+                  external_reference: paymentReference,
+                  method: input.paymentMethod,
+                  note: "Recorded from staff POS",
+                },
+                type: "payment",
               },
-              type: "payment",
             },
-          },
-          path: { order_id: order.id },
-        });
-      } catch (error) {
-        if (!isDuplicateMutationError(error)) throw error;
+            path: { order_id: order.id },
+          });
+        } catch (error) {
+          if (!isDuplicateMutationError(error)) throw error;
+        }
       }
 
       try {

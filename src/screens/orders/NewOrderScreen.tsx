@@ -14,6 +14,7 @@ import {
 } from "../../api/pos/queries";
 import {
   type PosPaymentMethod,
+  type PosPaymentTerms,
   usePosCheckoutMutation,
 } from "../../api/pos/usePosCheckoutMutation";
 import AppIcon from "../../components/icons/AppIcon";
@@ -127,30 +128,38 @@ function OrderTypeSelector({
 
 function PaymentSelector({
   onChange,
+  onChangeTerms,
+  terms,
   value,
 }: {
   onChange: (value: PosPaymentMethod) => void;
+  onChangeTerms: (value: PosPaymentTerms) => void;
+  terms: PosPaymentTerms;
   value: PosPaymentMethod;
 }) {
   return (
     <>
       <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-        3 · Payment
+        3 · Customer payment
       </Text>
       <View className="mb-3 flex-row gap-2">
-        {paymentMethods.map((method) => {
-          const selected = value === method.value;
+        {([
+          { label: "Paid now", value: "immediate" },
+          { label: "Pay later", value: "credit" },
+        ] as const).map((option) => {
+          const selected = terms === option.value;
 
           return (
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ selected }}
               className={
                 selected
                   ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
                   : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
               }
-              key={method.value}
-              onPress={() => onChange(method.value)}
+              key={option.value}
+              onPress={() => onChangeTerms(option.value)}
             >
               <Text
                 className={
@@ -159,12 +168,48 @@ function PaymentSelector({
                     : "text-center text-xs font-semibold text-muted"
                 }
               >
-                {method.label}
+                {option.label}
               </Text>
             </Pressable>
           );
         })}
       </View>
+      {terms === "immediate" ? (
+        <View className="mb-3 flex-row gap-2">
+          {paymentMethods.map((method) => {
+            const selected = value === method.value;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                className={
+                  selected
+                    ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
+                    : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
+                }
+                key={method.value}
+                onPress={() => onChange(method.value)}
+              >
+                <Text
+                  className={
+                    selected
+                      ? "text-center text-xs font-bold text-primary"
+                      : "text-center text-xs font-semibold text-muted"
+                  }
+                >
+                  {method.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <Text className="mb-3 text-sm leading-5 text-muted">
+          Stock is deducted now. Record partial or full payments later from the
+          order invoice.
+        </Text>
+      )}
     </>
   );
 }
@@ -294,6 +339,8 @@ export default function NewOrderScreen() {
   const checkoutMutation = usePosCheckoutMutation();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
+  const [paymentTerms, setPaymentTerms] =
+    useState<PosPaymentTerms>("immediate");
   const [search, setSearch] = useState("");
   const [{ quantities, saleType }, dispatchSelection] = useReducer(
     orderSelectionReducer,
@@ -371,6 +418,7 @@ export default function NewOrderScreen() {
           quantity,
         })),
         paymentMethod,
+        paymentTerms: saleType === "sale" ? paymentTerms : "immediate",
         saleType,
         totalCents,
       });
@@ -393,7 +441,7 @@ export default function NewOrderScreen() {
       />
 
       <LegendList
-        contentContainerStyle={{ paddingBottom: 224, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: 280, paddingHorizontal: 20 }}
         data={variants}
         estimatedItemSize={104}
         extraData={quantities}
@@ -511,7 +559,12 @@ export default function NewOrderScreen() {
         className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4"
       >
         {saleType === "sale" ? (
-          <PaymentSelector onChange={setPaymentMethod} value={paymentMethod} />
+          <PaymentSelector
+            onChange={setPaymentMethod}
+            onChangeTerms={setPaymentTerms}
+            terms={paymentTerms}
+            value={paymentMethod}
+          />
         ) : (
           <Text className="mb-3 text-sm text-muted">
             No inventory movement or payment will be recorded at confirmation.
@@ -536,10 +589,14 @@ export default function NewOrderScreen() {
                 : checkoutMutation.isPending
                 ? saleType === "preorder"
                   ? "Confirming preorder…"
-                  : "Completing sale…"
+                  : paymentTerms === "credit"
+                    ? "Creating credit sale…"
+                    : "Completing sale…"
                 : saleType === "preorder"
                   ? "Confirm preorder"
-                  : "Complete sale"}
+                  : paymentTerms === "credit"
+                    ? "Create credit sale"
+                    : "Complete sale"}
             </Text>
             <Text className="text-base font-bold text-on-primary">
               {tutorialMode

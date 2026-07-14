@@ -147,6 +147,12 @@ function PaymentSummary({
           </Text>
         </View>
         <View className="flex-row justify-between">
+          <Text className="text-sm text-muted">Payment terms</Text>
+          <Text className="text-sm font-semibold text-foreground">
+            {order.paymentTerms === "credit" ? "Pay later" : "Pay now"}
+          </Text>
+        </View>
+        <View className="flex-row justify-between">
           <Text className="text-sm text-muted">Customer paid</Text>
           <Text className="text-sm font-bold text-success">
             {formatCurrency(order.paidCents)}
