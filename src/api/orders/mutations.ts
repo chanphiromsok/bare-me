@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 
 import {
   patchApiOrdersByIdAllocateStock,
@@ -8,6 +9,11 @@ import {
   patchApiOrdersByIdSubmit,
   postApiOrdersByOrderIdPayments,
 } from "../generated/sdk.gen";
+import {
+  createExternalReference,
+  createMutationUuid,
+  isDuplicateMutationError,
+} from "../mutationReference";
 
 const orderDocument = (orderId: string) => ({
   data: { attributes: {}, id: orderId, type: "order" as const },
@@ -15,6 +21,9 @@ const orderDocument = (orderId: string) => ({
 
 export function useOrderWorkflowMutations(orderId: string) {
   const queryClient = useQueryClient();
+  const paymentReference = useRef<
+    { amountCents: number; uuid: string } | undefined
+  >(undefined);
   const refreshOrders = async () => {
     await queryClient.invalidateQueries({ queryKey: ["operations"] });
   };
@@ -50,21 +59,37 @@ export function useOrderWorkflowMutations(orderId: string) {
     onSuccess: refreshOrders,
   });
   const recordPayment = useMutation({
-    mutationFn: (amountCents: number) =>
-      postApiOrdersByOrderIdPayments({
-        body: {
-          data: {
-            attributes: {
-              amount_cents: amountCents,
-              method: "cash",
-              note: "Full balance recorded by staff app",
+    mutationFn: async (amountCents: number) => {
+      const currentReference = paymentReference.current;
+      const uuid =
+        currentReference?.amountCents === amountCents
+          ? currentReference.uuid
+          : createMutationUuid();
+      paymentReference.current = { amountCents, uuid };
+
+      try {
+        return await postApiOrdersByOrderIdPayments({
+          body: {
+            data: {
+              attributes: {
+                amount_cents: amountCents,
+                external_reference: createExternalReference("payment", uuid),
+                method: "cash",
+                note: "Full balance recorded by staff app",
+              },
+              type: "payment",
             },
-            type: "payment",
           },
-        },
-        path: { order_id: orderId },
-      }),
-    onSuccess: refreshOrders,
+          path: { order_id: orderId },
+        });
+      } catch (error) {
+        if (!isDuplicateMutationError(error)) throw error;
+      }
+    },
+    onSuccess: async () => {
+      paymentReference.current = undefined;
+      await refreshOrders();
+    },
   });
   const fulfill = useMutation({
     mutationFn: () =>

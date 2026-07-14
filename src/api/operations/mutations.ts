@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 
 import { operationQueryKeys } from "../../features/operations/queries";
 import type { ProductDetail } from "../../features/operations/productQueries";
@@ -8,6 +9,10 @@ import {
   postApiProductVariants,
   postApiProductVariantsByProductVariantIdRestock,
 } from "../generated/sdk.gen";
+import {
+  createMutationUuid,
+  isDuplicateMutationError,
+} from "../mutationReference";
 import { type PosVariant, posQueryKeys } from "../pos/queries";
 
 export type CreateCustomerInput = {
@@ -140,23 +145,44 @@ export function useCreateProductMutation() {
 
 export function useRestockMutation() {
   const queryClient = useQueryClient();
+  const mutationReference = useRef<
+    | {
+        fingerprint: string;
+        uuid: string;
+      }
+    | undefined
+  >(undefined);
 
   return useMutation({
     mutationFn: async (input: RestockInput) => {
-      const response = await postApiProductVariantsByProductVariantIdRestock({
-        body: {
-          data: {
-            attributes: {
-              note: input.note || undefined,
-              quantity: input.quantity,
-            },
-            type: "stock_movement",
-          },
-        },
-        path: { product_variant_id: input.variantId },
-      });
+      const fingerprint = JSON.stringify(input);
+      const currentReference = mutationReference.current;
+      const uuid =
+        currentReference?.fingerprint === fingerprint
+          ? currentReference.uuid
+          : createMutationUuid();
+      mutationReference.current = { fingerprint, uuid };
 
-      return response.data.data;
+      try {
+        const response = await postApiProductVariantsByProductVariantIdRestock({
+          body: {
+            data: {
+              attributes: {
+                note: input.note || undefined,
+                quantity: input.quantity,
+                reference_id: uuid,
+                reference_type: "mobile",
+              },
+              type: "stock_movement",
+            },
+          },
+          path: { product_variant_id: input.variantId },
+        });
+
+        return response.data.data;
+      } catch (error) {
+        if (!isDuplicateMutationError(error)) throw error;
+      }
     },
     onMutate: async (input) => {
       await Promise.all([
@@ -207,6 +233,9 @@ export function useRestockMutation() {
       for (const [queryKey, product] of context?.previousDetails ?? []) {
         queryClient.setQueryData(queryKey, product);
       }
+    },
+    onSuccess: () => {
+      mutationReference.current = undefined;
     },
     onSettled: async () => {
       await Promise.all([
