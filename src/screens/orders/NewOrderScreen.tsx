@@ -413,11 +413,11 @@ function ProductGridCard({
         <View
           className={
             quantity > 0
-              ? "relative m-2 mb-0 h-28 items-center justify-center rounded-2xl bg-primary-soft"
-              : "relative m-2 mb-0 h-28 items-center justify-center rounded-2xl bg-surface-muted"
+              ? "relative m-2 mb-0 h-[88px] items-center justify-center rounded-2xl bg-primary-soft"
+              : "relative m-2 mb-0 h-[88px] items-center justify-center rounded-2xl bg-surface-muted"
           }
         >
-          <View className="absolute left-2 top-2 rounded-full bg-surface px-2.5 py-1">
+          <View className="absolute left-2 top-2 rounded-full bg-surface px-2 py-0.5">
             <Text
               className={
                 availableQuantity === 0
@@ -430,13 +430,15 @@ function ProductGridCard({
             </Text>
           </View>
 
-          <View
-            accessibilityElementsHidden
-            className="h-12 w-12 items-center justify-center rounded-xl bg-surface"
-            importantForAccessibility="no-hide-descendants"
-          >
-            <AppIcon name="parcel" color={colors.primary} size={24} />
-          </View>
+          {quantity === 0 ? (
+            <View
+              accessibilityElementsHidden
+              className="h-11 w-11 items-center justify-center rounded-xl bg-surface"
+              importantForAccessibility="no-hide-descendants"
+            >
+              <AppIcon name="parcel" color={colors.primary} size={24} />
+            </View>
+          ) : null}
 
           {quantity === 0 ? (
             <Pressable
@@ -457,7 +459,7 @@ function ProductGridCard({
             </Pressable>
           ) : (
             <View
-              className="absolute bottom-2 right-2 flex-row items-center rounded-full bg-surface"
+              className="absolute bottom-2 left-2 right-2 flex-row items-center justify-between rounded-full bg-surface"
               style={styles.controlShadow}
             >
               <Pressable
@@ -469,7 +471,7 @@ function ProductGridCard({
               >
                 <Text className="text-xl font-semibold text-foreground">−</Text>
               </Pressable>
-              <Text className="min-w-7 text-center text-sm font-bold text-foreground">
+              <Text className="flex-1 text-center text-sm font-bold text-foreground">
                 {quantity}
               </Text>
               <Pressable
@@ -492,17 +494,20 @@ function ProductGridCard({
           )}
         </View>
 
-        <View className="min-h-24 px-3 pb-3 pt-3">
-          <Text className="text-[17px] font-bold leading-5 text-foreground">
+        <View className="min-h-20 px-3 pb-2.5 pt-2.5">
+          <Text className="text-base font-bold leading-5 text-foreground">
             {formatCurrency(item.priceCents)}
           </Text>
           <Text
-            className="mt-1.5 text-[14px] font-semibold leading-[18px] text-foreground"
+            className="mt-1 text-[14px] font-semibold leading-[18px] text-foreground"
             numberOfLines={1}
           >
             {item.name}
           </Text>
-          <Text className="mt-1 text-xs leading-4 text-muted" numberOfLines={1}>
+          <Text
+            className="mt-0.5 text-xs leading-4 text-muted"
+            numberOfLines={1}
+          >
             {item.size} · {item.color}
           </Text>
         </View>
@@ -754,7 +759,7 @@ function CatalogScreen() {
           paddingTop: 4,
         }}
         data={filteredVariants}
-        estimatedItemSize={220}
+        estimatedItemSize={180}
         extraData={quantities}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
