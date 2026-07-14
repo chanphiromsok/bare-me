@@ -6,6 +6,8 @@ Bare is an Expo React Native app with native `ios/` and `android/` projects comm
 
 The staff app was reviewed end to end against the local Phoenix API on an iPhone 17 Pro simulator (iOS 26.2). The review used Expo 57.0.4, React Native 0.86.0, Metro on port 8081, and the seeded `staff@example.com` account.
 
+Detailed start-to-finish evidence is split by workflow in the [staff app test reports](docs/testing/README.md).
+
 ### Coverage
 
 | Area                   | Result                | Notes                                                                                                                                                                   |
