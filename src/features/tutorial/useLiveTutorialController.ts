@@ -35,12 +35,14 @@ export function useLiveTutorialController({
   const showStep = (index: number) => {
     if (!enabled) return;
 
-    tour.spotlight.clear();
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
     onBeforeStep?.(index);
-    timerRef.current = setTimeout(() => tour.goTo(index), highlightDelay);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      tour.goTo(index);
+    }, highlightDelay);
   };
 
   const startOnLayout = () => {
