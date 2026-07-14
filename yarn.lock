@@ -2343,6 +2343,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swmansion/react-native-bottom-sheet@npm:^0.16.1":
+  version: 0.16.1
+  resolution: "@swmansion/react-native-bottom-sheet@npm:0.16.1"
+  peerDependencies:
+    react: ">=18.0.0"
+    react-native: ">=0.76.0"
+  checksum: 10/94e70a9415fbd5175e8afa402fcbfee4bbdefdfa6b9ebaf5731d2672594713675f87f6dd0b7a8021ef79fe6fbb1373aca8551760187e9a45e7f62955981090e9
+  languageName: node
+  linkType: hard
+
 "@tailwindcss/node@npm:4.3.0":
   version: 4.3.0
   resolution: "@tailwindcss/node@npm:4.3.0"
@@ -3469,6 +3479,7 @@ __metadata:
     "@react-navigation/native": "npm:^7.1.31"
     "@react-navigation/native-stack": "npm:^7.14.2"
     "@shopify/react-native-skia": "npm:^2.6.9"
+    "@swmansion/react-native-bottom-sheet": "npm:^0.16.1"
     "@tanstack/react-query": "npm:^5.100.14"
     "@types/react": "npm:~19.2.10"
     arktype: "npm:^2.2.3"

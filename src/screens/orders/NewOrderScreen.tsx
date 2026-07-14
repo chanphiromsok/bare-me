@@ -3,9 +3,15 @@ import {
   type LegendListRef,
   type LegendListRenderItemProps,
 } from "@legendapp/list/react-native";
-import { type RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  type RouteProp,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
+import { ModalBottomSheet } from "@swmansion/react-native-bottom-sheet";
 import { useReducer, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PosVariant } from "../../api/pos/queries";
 import {
@@ -45,6 +51,10 @@ const paymentMethods: {
   { label: "Bank transfer", value: "bank_transfer" },
   { label: "Manual card", value: "card_manual" },
 ];
+
+const productSheetDetents: [number, "content"] = [0, "content"];
+
+type ProductFilter = "all" | "available" | "selected";
 
 type OrderSelectionState = {
   quantities: Record<string, number>;
@@ -143,10 +153,12 @@ function PaymentSelector({
         3 · Customer payment
       </Text>
       <View className="mb-3 flex-row gap-2">
-        {([
-          { label: "Paid now", value: "immediate" },
-          { label: "Pay later", value: "credit" },
-        ] as const).map((option) => {
+        {(
+          [
+            { label: "Paid now", value: "immediate" },
+            { label: "Pay later", value: "credit" },
+          ] as const
+        ).map((option) => {
           const selected = terms === option.value;
 
           return (
@@ -283,6 +295,204 @@ function ProductRow({
   );
 }
 
+function ProductPickerSheet({
+  catalog,
+  isOpen,
+  isPreorder,
+  onChangeQuantity,
+  onClose,
+  quantities,
+  state,
+}: {
+  catalog: PosVariant[];
+  isOpen: boolean;
+  isPreorder: boolean;
+  onChangeQuantity: (variantId: string, nextQuantity: number) => void;
+  onClose: () => void;
+  quantities: Record<string, number>;
+  state: "error" | "pending" | "ready";
+}) {
+  const insets = useSafeAreaInsets();
+  const [filter, setFilter] = useState<ProductFilter>(
+    isPreorder ? "all" : "available",
+  );
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+
+  const filteredVariants = catalog.filter((variant) => {
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "available" && variant.stock > 0) ||
+      (filter === "selected" && (quantities[variant.id] ?? 0) > 0);
+    const matchesSearch =
+      !query ||
+      [variant.name, variant.sku, variant.color, variant.size].some((value) =>
+        value.toLowerCase().includes(query),
+      );
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const selectedItemCount = catalog.reduce(
+    (total, variant) => total + (quantities[variant.id] ?? 0),
+    0,
+  );
+  const selectedTotalCents = catalog.reduce(
+    (total, variant) =>
+      total + (quantities[variant.id] ?? 0) * variant.priceCents,
+    0,
+  );
+  const filters: { label: string; value: ProductFilter }[] = [
+    { label: "All", value: "all" },
+    { label: isPreorder ? "Stocked" : "In stock", value: "available" },
+    { label: `Selected (${selectedItemCount})`, value: "selected" },
+  ];
+
+  return (
+    <ModalBottomSheet
+      detents={productSheetDetents}
+      index={isOpen ? 1 : 0}
+      onIndexChange={(nextIndex) => {
+        if (nextIndex === 0) onClose();
+      }}
+      scrimColor={colors.overlay}
+      surface={<View style={styles.productSheetSurface} />}
+    >
+      <View
+        accessibilityViewIsModal
+        className="flex-1 overflow-hidden rounded-t-[28px] bg-surface"
+      >
+        <View className="items-center pb-1 pt-2">
+          <View className="h-1 w-10 rounded-full bg-border" />
+        </View>
+        <View className="flex-row items-center gap-3 border-b border-border px-4 pb-3 pt-1">
+          <View className="flex-1">
+            <Text className="text-xl font-bold text-foreground">
+              Add products
+            </Text>
+            <Text className="mt-0.5 text-sm text-muted">
+              {isPreorder
+                ? "Choose any variant, even when stock is zero."
+                : "Choose variants currently available to sell."}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Close product picker"
+            accessibilityRole="button"
+            className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted active:opacity-70"
+            onPress={onClose}
+          >
+            <Text className="text-2xl leading-7 text-foreground">×</Text>
+          </Pressable>
+        </View>
+
+        <View className="gap-3 border-b border-border bg-surface px-4 py-3">
+          <SearchField
+            onChangeText={setSearch}
+            placeholder="Search name, SKU, size, or color"
+            value={search}
+          />
+          <ScrollView
+            horizontal
+            keyboardShouldPersistTaps="handled"
+            showsHorizontalScrollIndicator={false}
+          >
+            <View className="flex-row gap-2">
+              {filters.map((option) => {
+                const selected = filter === option.value;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    className={
+                      selected
+                        ? "min-h-11 items-center justify-center rounded-full bg-primary px-4"
+                        : "min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4"
+                    }
+                    key={option.value}
+                    onPress={() => setFilter(option.value)}
+                  >
+                    <Text
+                      className={
+                        selected
+                          ? "text-sm font-bold text-on-primary"
+                          : "text-sm font-semibold text-muted"
+                      }
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </View>
+
+        <LegendList
+          contentContainerStyle={{ padding: 16 }}
+          data={filteredVariants}
+          estimatedItemSize={104}
+          extraData={quantities}
+          ItemSeparatorComponent={() => <View className="h-3" />}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={(variant) => variant.id}
+          ListEmptyComponent={
+            <View className="rounded-2xl border border-border bg-surface-muted p-6">
+              <Text className="text-center text-sm font-semibold text-muted">
+                {state === "pending"
+                  ? "Loading products…"
+                  : state === "error"
+                    ? "Products could not be loaded. Close this picker and try again."
+                    : filter === "selected"
+                      ? "No products selected yet."
+                      : "No variants match this search and filter."}
+              </Text>
+            </View>
+          }
+          maintainVisibleContentPosition
+          recycleItems
+          renderItem={(props) => (
+            <ProductRow
+              {...props}
+              isPreorder={isPreorder}
+              onChangeQuantity={onChangeQuantity}
+              quantity={quantities[props.item.id] ?? 0}
+            />
+          )}
+          showsVerticalScrollIndicator={false}
+        />
+
+        <View
+          className="border-t border-border bg-surface px-4 pt-3"
+          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        >
+          <Pressable
+            accessibilityLabel={`Done choosing products, ${selectedItemCount} items selected`}
+            accessibilityRole="button"
+            className="min-h-14 flex-row items-center justify-between rounded-2xl bg-primary px-5 active:bg-primary-pressed"
+            onPress={onClose}
+          >
+            <View>
+              <Text className="text-xs font-semibold text-primary-soft">
+                Done choosing products
+              </Text>
+              <Text className="text-base font-bold text-on-primary">
+                {selectedItemCount} {selectedItemCount === 1 ? "item" : "items"}
+              </Text>
+            </View>
+            <Text className="text-xl font-bold text-on-primary">
+              {formatCurrency(selectedTotalCents)}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </ModalBottomSheet>
+  );
+}
+
 function OrderScreenHeader({
   itemCount,
   onBack,
@@ -341,7 +551,7 @@ export default function NewOrderScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
   const [paymentTerms, setPaymentTerms] =
     useState<PosPaymentTerms>("immediate");
-  const [search, setSearch] = useState("");
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [{ quantities, saleType }, dispatchSelection] = useReducer(
     orderSelectionReducer,
     {
@@ -349,34 +559,24 @@ export default function NewOrderScreen() {
       saleType: tutorial?.id === "preorder" ? "preorder" : "sale",
     },
   );
-  const { showStep: showTutorialStep, startOnLayout, tour } =
-    useLiveTutorialController({
-      enabled: tutorialMode,
-      onBeforeStep: (index) => {
-        if (index < 2) {
-          void listRef.current?.scrollToOffset({ animated: true, offset: 0 });
-        } else if (index === 2) {
-          void listRef.current?.scrollToOffset({
-            animated: true,
-            offset: 180,
-          });
-        }
-      },
-      steps: tutorial?.steps ?? [],
-    });
-
-  const variants = (() => {
-    const query = search.trim().toLowerCase();
-    const catalog = catalogQuery.data ?? [];
-
-    if (!query) return catalog;
-
-    return catalog.filter((variant) =>
-      [variant.name, variant.sku, variant.color, variant.size].some((value) =>
-        value.toLowerCase().includes(query),
-      ),
-    );
-  })();
+  const {
+    showStep: showTutorialStep,
+    startOnLayout,
+    tour,
+  } = useLiveTutorialController({
+    enabled: tutorialMode,
+    onBeforeStep: (index) => {
+      if (index < 2) {
+        void listRef.current?.scrollToOffset({ animated: true, offset: 0 });
+      } else if (index === 2) {
+        void listRef.current?.scrollToOffset({
+          animated: true,
+          offset: 180,
+        });
+      }
+    },
+    steps: tutorial?.steps ?? [],
+  });
 
   const cart = (catalogQuery.data ?? []).flatMap((variant) => {
     const quantity = quantities[variant.id] ?? 0;
@@ -388,6 +588,7 @@ export default function NewOrderScreen() {
     (total, item) => total + item.quantity * item.variant.priceCents,
     0,
   );
+  const selectedVariants = cart.map(({ variant }) => variant);
   const canCheckout =
     !tutorialMode &&
     Boolean(selectedCustomerId) &&
@@ -429,35 +630,32 @@ export default function NewOrderScreen() {
   };
 
   return (
-    <View
-      className="flex-1 bg-background pt-safe"
-      onLayout={startOnLayout}
-    >
-      <OrderScreenHeader
-        itemCount={itemCount}
-        onBack={() => navigation.goBack()}
-        saleType={saleType}
-        tutorialMode={tutorialMode}
-      />
+    <View className="flex-1 bg-background pt-safe" onLayout={startOnLayout}>
+      <View
+        accessibilityElementsHidden={productPickerOpen}
+        importantForAccessibility={
+          productPickerOpen ? "no-hide-descendants" : "auto"
+        }
+      >
+        <OrderScreenHeader
+          itemCount={itemCount}
+          onBack={() => navigation.goBack()}
+          saleType={saleType}
+          tutorialMode={tutorialMode}
+        />
+      </View>
 
       <LegendList
+        accessibilityElementsHidden={productPickerOpen}
         contentContainerStyle={{ paddingBottom: 280, paddingHorizontal: 20 }}
-        data={variants}
+        data={selectedVariants}
         estimatedItemSize={104}
         extraData={quantities}
+        importantForAccessibility={
+          productPickerOpen ? "no-hide-descendants" : "auto"
+        }
         ItemSeparatorComponent={() => <View className="h-3" />}
         keyExtractor={(variant) => variant.id}
-        ListEmptyComponent={
-          <View className="rounded-2xl border border-border bg-surface p-6">
-            <Text className="text-center text-sm text-muted">
-              {catalogQuery.isPending
-                ? "Loading products…"
-                : saleType === "preorder"
-                  ? "No variants match your search."
-                  : "No in-stock variants match your search."}
-            </Text>
-          </View>
-        }
         ListHeaderComponent={
           <View className="mb-4 gap-4">
             <View
@@ -530,11 +728,27 @@ export default function NewOrderScreen() {
               <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
                 2 · Products
               </Text>
-              <SearchField
-                onChangeText={setSearch}
-                placeholder="Search product, SKU, size, or color"
-                value={search}
-              />
+              <Pressable
+                accessibilityLabel="Browse and choose products"
+                accessibilityRole="button"
+                className="min-h-20 flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4 active:bg-surface-muted"
+                onPress={() => setProductPickerOpen(true)}
+              >
+                <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-soft">
+                  <AppIcon name="scan" color={colors.primary} size={22} />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-foreground">
+                    Browse products
+                  </Text>
+                  <Text className="mt-0.5 text-sm text-muted">
+                    {itemCount > 0
+                      ? `${itemCount} ${itemCount === 1 ? "item" : "items"} selected · Search to add more`
+                      : "Search and filter the full catalog"}
+                  </Text>
+                </View>
+                <Text className="text-2xl text-primary">›</Text>
+              </Pressable>
             </View>
           </View>
         }
@@ -552,11 +766,30 @@ export default function NewOrderScreen() {
         showsVerticalScrollIndicator={false}
       />
 
+      <ProductPickerSheet
+        catalog={catalogQuery.data ?? []}
+        isOpen={productPickerOpen}
+        isPreorder={saleType === "preorder"}
+        key={saleType}
+        onChangeQuantity={changeQuantity}
+        onClose={() => setProductPickerOpen(false)}
+        quantities={quantities}
+        state={
+          catalogQuery.isPending
+            ? "pending"
+            : catalogQuery.isError
+              ? "error"
+              : "ready"
+        }
+      />
+
       <View
-        {...(tutorialMode
-          ? tour.getTargetProps("order-complete")
-          : undefined)}
+        {...(tutorialMode ? tour.getTargetProps("order-complete") : undefined)}
+        accessibilityElementsHidden={productPickerOpen}
         className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4"
+        importantForAccessibility={
+          productPickerOpen ? "no-hide-descendants" : "auto"
+        }
       >
         {saleType === "sale" ? (
           <PaymentSelector
@@ -587,23 +820,23 @@ export default function NewOrderScreen() {
               {tutorialMode
                 ? "Practice only"
                 : checkoutMutation.isPending
-                ? saleType === "preorder"
-                  ? "Confirming preorder…"
-                  : paymentTerms === "credit"
-                    ? "Creating credit sale…"
-                    : "Completing sale…"
-                : saleType === "preorder"
-                  ? "Confirm preorder"
-                  : paymentTerms === "credit"
-                    ? "Create credit sale"
-                    : "Complete sale"}
+                  ? saleType === "preorder"
+                    ? "Confirming preorder…"
+                    : paymentTerms === "credit"
+                      ? "Creating credit sale…"
+                      : "Completing sale…"
+                  : saleType === "preorder"
+                    ? "Confirm preorder"
+                    : paymentTerms === "credit"
+                      ? "Create credit sale"
+                      : "Complete sale"}
             </Text>
             <Text className="text-base font-bold text-on-primary">
               {tutorialMode
                 ? "No order will be created"
                 : selectedCustomerId
-                ? `${itemCount} ${itemCount === 1 ? "item" : "items"}`
-                : "Select a customer"}
+                  ? `${itemCount} ${itemCount === 1 ? "item" : "items"}`
+                  : "Select a customer"}
             </Text>
           </View>
           <Text className="text-xl font-bold text-on-primary">
@@ -621,3 +854,13 @@ export default function NewOrderScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  productSheetSurface: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    boxShadow: `0 -4px 12px ${colors.shadow}`,
+  },
+});

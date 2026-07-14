@@ -1,4 +1,5 @@
 import "./global.css";
+import { BottomSheetProvider } from "@swmansion/react-native-bottom-sheet";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
@@ -16,15 +17,17 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
-          <PortalProvider>
-            <UniwindWithSafeAreaProvider>
-              <I18nProvider>
-                <Navigation theme={navigationTheme} />
-                <StatusBar style="dark" />
-              </I18nProvider>
-            </UniwindWithSafeAreaProvider>
-            <PortalHost name="spotlight-root" style={styles.spotlightHost} />
-          </PortalProvider>
+          <BottomSheetProvider>
+            <PortalProvider>
+              <UniwindWithSafeAreaProvider>
+                <I18nProvider>
+                  <Navigation theme={navigationTheme} />
+                  <StatusBar style="dark" />
+                </I18nProvider>
+              </UniwindWithSafeAreaProvider>
+              <PortalHost name="spotlight-root" style={styles.spotlightHost} />
+            </PortalProvider>
+          </BottomSheetProvider>
         </QueryClientProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>

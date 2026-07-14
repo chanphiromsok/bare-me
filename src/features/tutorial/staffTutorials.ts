@@ -1,10 +1,7 @@
 import type { AppIconName } from "../../components/icons/AppIcon";
 
 export type StaffTutorialId =
-  | "sale-order"
-  | "preorder"
-  | "new-product"
-  | "restock";
+  "sale-order" | "preorder" | "new-product" | "restock";
 
 export type StaffTutorialStep = {
   description: string;
@@ -43,9 +40,9 @@ export const staffTutorials: StaffTutorial[] = [
       },
       {
         id: "order-products",
-        title: "Add product variants",
+        title: "Open the product picker",
         description:
-          "Search the real catalog, then use the plus button on the correct size and color. Check available stock and quantity.",
+          "Tap Browse products to open the searchable catalog. Filter to in-stock variants, then use the plus button on the correct size and color.",
       },
       {
         id: "order-complete",
@@ -76,9 +73,9 @@ export const staffTutorials: StaffTutorial[] = [
       },
       {
         id: "order-products",
-        title: "Add requested variants",
+        title: "Open the product picker",
         description:
-          "Search the catalog and add the exact size, color, and quantity requested. Preorders can exceed current stock.",
+          "Tap Browse products, search the catalog, and add the exact size, color, and quantity requested. Preorders can include zero-stock variants.",
       },
       {
         id: "order-complete",
@@ -157,5 +154,7 @@ export const staffTutorials: StaffTutorial[] = [
 ];
 
 export function findStaffTutorial(id: string | undefined) {
-  return staffTutorials.find((tutorial) => tutorial.id === id) ?? staffTutorials[0];
+  return (
+    staffTutorials.find((tutorial) => tutorial.id === id) ?? staffTutorials[0]
+  );
 }
