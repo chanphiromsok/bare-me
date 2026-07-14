@@ -1,0 +1,171 @@
+diff --git a/lib/commonjs/CreateGraphPath.js b/lib/commonjs/CreateGraphPath.js
+index 52026421c09910147d70caf3fbc60d3f10b30891..c252bcbc3c460ee64b8cd806ad3abc2597ce0743 100644
+--- a/lib/commonjs/CreateGraphPath.js
++++ b/lib/commonjs/CreateGraphPath.js
+@@ -79,13 +79,13 @@ function createGraphPathBase(_ref3) {
+     shouldFillGradient
+   } = _ref3;
+
+-  const path = _reactNativeSkia.Skia.Path.Make(); // Canvas width substracted by the horizontal padding => Actual drawing width
++  const pathBuilder = _reactNativeSkia.Skia.PathBuilder.Make(); // Canvas width substracted by the horizontal padding => Actual drawing width
+
+
+   const drawingWidth = width - 2 * horizontalPadding; // Canvas height substracted by the vertical padding => Actual drawing height
+
+   const drawingHeight = height - 2 * verticalPadding;
+-  if (graphData[0] == null) return path;
++  if (graphData[0] == null) return pathBuilder.build();
+   const points = [];
+   const startX = getXInRange(drawingWidth, graphData[0].date, range.x) + horizontalPadding;
+   const endX = getXInRange(drawingWidth, graphData[graphData.length - 1].date, range.x) + horizontalPadding;
+@@ -124,7 +124,7 @@ function createGraphPathBase(_ref3) {
+   for (let i = 0; i < points.length; i++) {
+     const point = points[i]; // first point needs to start the path
+
+-    if (i === 0) path.moveTo(point.x, point.y);
++    if (i === 0) pathBuilder.moveTo(point.x, point.y);
+     const prev = points[i - 1];
+     const prevPrev = points[i - 2];
+     if (prev == null) continue;
+@@ -136,17 +136,19 @@ function createGraphPathBase(_ref3) {
+     const cp2y = (p0.y + 2 * p1.y) / 3;
+     const cp3x = (p0.x + 4 * p1.x + point.x) / 6;
+     const cp3y = (p0.y + 4 * p1.y + point.y) / 6;
+-    path.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
++    pathBuilder.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
+
+     if (i === points.length - 1) {
+-      path.cubicTo(point.x, point.y, point.x, point.y, point.x, point.y);
++      pathBuilder.cubicTo(point.x, point.y, point.x, point.y, point.x, point.y);
+     }
+   }
+
++  const path = pathBuilder.build();
+   if (!shouldFillGradient) return path;
+-  const gradientPath = path.copy();
+-  gradientPath.lineTo(endX, height + verticalPadding);
+-  gradientPath.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPathBuilder = _reactNativeSkia.Skia.PathBuilder.MakeFromPath(path);
++  gradientPathBuilder.lineTo(endX, height + verticalPadding);
++  gradientPathBuilder.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPath = gradientPathBuilder.build();
+   return {
+     path: path,
+     gradientPath: gradientPath
+diff --git a/lib/module/CreateGraphPath.js b/lib/module/CreateGraphPath.js
+index 85c30c5e38a2bd5f05ea11fe5ff93ce4b41f7714..5e27710344e351ec979706749b365333e5c16b8f 100644
+--- a/lib/module/CreateGraphPath.js
++++ b/lib/module/CreateGraphPath.js
+@@ -49,13 +49,13 @@ function createGraphPathBase({
+   canvasWidth: width,
+   shouldFillGradient
+ }) {
+-  const path = Skia.Path.Make();
++  const pathBuilder = Skia.PathBuilder.Make();
+
+   // Canvas width substracted by the horizontal padding => Actual drawing width
+   const drawingWidth = width - 2 * horizontalPadding;
+   // Canvas height substracted by the vertical padding => Actual drawing height
+   const drawingHeight = height - 2 * verticalPadding;
+-  if (graphData[0] == null) return path;
++  if (graphData[0] == null) return pathBuilder.build();
+   const points = [];
+   const startX = getXInRange(drawingWidth, graphData[0].date, range.x) + horizontalPadding;
+   const endX = getXInRange(drawingWidth, graphData[graphData.length - 1].date, range.x) + horizontalPadding;
+@@ -91,7 +91,7 @@ function createGraphPathBase({
+     const point = points[i];
+
+     // first point needs to start the path
+-    if (i === 0) path.moveTo(point.x, point.y);
++    if (i === 0) pathBuilder.moveTo(point.x, point.y);
+     const prev = points[i - 1];
+     const prevPrev = points[i - 2];
+     if (prev == null) continue;
+@@ -103,15 +103,17 @@ function createGraphPathBase({
+     const cp2y = (p0.y + 2 * p1.y) / 3;
+     const cp3x = (p0.x + 4 * p1.x + point.x) / 6;
+     const cp3y = (p0.y + 4 * p1.y + point.y) / 6;
+-    path.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
++    pathBuilder.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
+     if (i === points.length - 1) {
+-      path.cubicTo(point.x, point.y, point.x, point.y, point.x, point.y);
++      pathBuilder.cubicTo(point.x, point.y, point.x, point.y, point.x, point.y);
+     }
+   }
++  const path = pathBuilder.build();
+   if (!shouldFillGradient) return path;
+-  const gradientPath = path.copy();
+-  gradientPath.lineTo(endX, height + verticalPadding);
+-  gradientPath.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPathBuilder = Skia.PathBuilder.MakeFromPath(path);
++  gradientPathBuilder.lineTo(endX, height + verticalPadding);
++  gradientPathBuilder.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPath = gradientPathBuilder.build();
+   return {
+     path: path,
+     gradientPath: gradientPath
+diff --git a/src/CreateGraphPath.ts b/src/CreateGraphPath.ts
+index 5676695e91e8b86cd64df18096ecf57556a16788..ebcd02384ec3184a27ee81d7500e5c50bc3e9faa 100644
+--- a/src/CreateGraphPath.ts
++++ b/src/CreateGraphPath.ts
+@@ -144,14 +144,14 @@ function createGraphPathBase({
+ }: GraphPathConfigWithGradient | GraphPathConfigWithoutGradient):
+   | SkPath
+   | GraphPathWithGradient {
+-  const path = Skia.Path.Make();
++  const pathBuilder = Skia.PathBuilder.Make();
+
+   // Canvas width substracted by the horizontal padding => Actual drawing width
+   const drawingWidth = width - 2 * horizontalPadding;
+   // Canvas height substracted by the vertical padding => Actual drawing height
+   const drawingHeight = height - 2 * verticalPadding;
+
+-  if (graphData[0] == null) return path;
++  if (graphData[0] == null) return pathBuilder.build();
+
+   const points: SkPoint[] = [];
+
+@@ -211,7 +211,7 @@ function createGraphPathBase({
+     const point = points[i]!;
+
+     // first point needs to start the path
+-    if (i === 0) path.moveTo(point.x, point.y);
++    if (i === 0) pathBuilder.moveTo(point.x, point.y);
+
+     const prev = points[i - 1];
+     const prevPrev = points[i - 2];
+@@ -227,19 +227,28 @@ function createGraphPathBase({
+     const cp3x = (p0.x + 4 * p1.x + point.x) / 6;
+     const cp3y = (p0.y + 4 * p1.y + point.y) / 6;
+
+-    path.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
++    pathBuilder.cubicTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
+
+     if (i === points.length - 1) {
+-      path.cubicTo(point.x, point.y, point.x, point.y, point.x, point.y);
++      pathBuilder.cubicTo(
++        point.x,
++        point.y,
++        point.x,
++        point.y,
++        point.x,
++        point.y
++      );
+     }
+   }
+
+-  if (!shouldFillGradient) return path;
++  const path = pathBuilder.build();
+
+-  const gradientPath = path.copy();
++  if (!shouldFillGradient) return path;
+
+-  gradientPath.lineTo(endX, height + verticalPadding);
+-  gradientPath.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPathBuilder = Skia.PathBuilder.MakeFromPath(path);
++  gradientPathBuilder.lineTo(endX, height + verticalPadding);
++  gradientPathBuilder.lineTo(0 + horizontalPadding, height + verticalPadding);
++  const gradientPath = gradientPathBuilder.build();
+
+   return { path: path, gradientPath: gradientPath };
+ }

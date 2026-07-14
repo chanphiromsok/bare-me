@@ -3502,9 +3502,8 @@ __metadata:
     react-hook-form: "npm:^7.81.0"
     react-native: "npm:0.86.0"
     react-native-gesture-handler: "npm:^3.0.2"
-    react-native-graph: "npm:^1.2.0"
+    react-native-graph: "patch:react-native-graph@npm%3A1.2.0#~/.yarn/patches/react-native-graph-npm-1.2.0-8367f838d0.patch"
     react-native-keyboard-controller: "npm:1.21.9"
-    react-native-livechart: "npm:^4.9.1"
     react-native-mmkv: "npm:^4.3.2"
     react-native-nano-icons: "npm:0.2.1"
     react-native-nitro-geolocation: "npm:^1.4.2"
@@ -7904,7 +7903,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-graph@npm:^1.2.0":
+"react-native-graph@npm:1.2.0":
   version: 1.2.0
   resolution: "react-native-graph@npm:1.2.0"
   peerDependencies:
@@ -7913,6 +7912,18 @@ __metadata:
     react-native-reanimated: "*"
     react-native-worklets: "*"
   checksum: 10/6d95ea6dd1bd30abcfec3b0600b2a7fbdd1a19e925239aff6bc5483e783d42966c3e44cf161f16f1321785809c5384e9e7c44915d443e8fc2ba2f716f688f04a
+  languageName: node
+  linkType: hard
+
+"react-native-graph@patch:react-native-graph@npm%3A1.2.0#~/.yarn/patches/react-native-graph-npm-1.2.0-8367f838d0.patch":
+  version: 1.2.0
+  resolution: "react-native-graph@patch:react-native-graph@npm%3A1.2.0#~/.yarn/patches/react-native-graph-npm-1.2.0-8367f838d0.patch::version=1.2.0&hash=c82a35"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-reanimated: "*"
+    react-native-worklets: "*"
+  checksum: 10/ae9e029706f7c95c708de19ac917cf08fc35fa9c3d29fa307ef0af0785be94f85b8d2bf13880bab0e039afcbcbce5e2fb0371d83a9cc986e519cedcb3343b8e0
   languageName: node
   linkType: hard
 
@@ -7936,20 +7947,6 @@ __metadata:
     react-native: "*"
     react-native-reanimated: ">=3.0.0"
   checksum: 10/54c91528fa7730a41efe1688fad32dbbe6f32878b5bb1ef3fc78e4fba837704efe3a34cfa0c7c674608ad32f5e677bfcb6c7c237697b20252784fc51c2def4ff
-  languageName: node
-  linkType: hard
-
-"react-native-livechart@npm:^4.9.1":
-  version: 4.9.1
-  resolution: "react-native-livechart@npm:4.9.1"
-  peerDependencies:
-    "@shopify/react-native-skia": ">=2.6.0"
-    react: ">=18.0.0"
-    react-native: ">=0.76.0"
-    react-native-gesture-handler: ">=2.0.0"
-    react-native-reanimated: ">=4.0.0"
-    react-native-worklets: ">=0.7.0"
-  checksum: 10/4269396ea2976b9994bf227535669bb5068d362d13f0cdfe23f0ab8943561a4ed62ff2c5fed7cf0d616d0894094c8a3124d500bb13324300913c28ce488363bc
   languageName: node
   linkType: hard
 
