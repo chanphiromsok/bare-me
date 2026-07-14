@@ -2,6 +2,11 @@ import {
   LegendList,
   type LegendListRenderItemProps,
 } from "@legendapp/list/react-native";
+import {
+  type NavigationProp,
+  type ParamListBase,
+  useNavigation,
+} from "@react-navigation/native";
 import { Pressable, Text, View } from "react-native";
 
 import { clearAuthSession } from "../../api/auth/session";
@@ -9,7 +14,7 @@ import { queryClient } from "../../api/queryClient";
 import AppIcon, { type AppIconName } from "../../components/icons/AppIcon";
 import OperationsHeader from "../../components/operations/OperationsHeader";
 import { useAuthUser } from "../../storage/authUserStore";
-import { colors } from "../../theme";
+import { colors } from "../../theme/colors";
 
 type MoreItem = {
   detail: string;
@@ -67,7 +72,13 @@ function MoreRow({ item }: LegendListRenderItemProps<MoreItem>) {
   );
 }
 
+async function handleSignOut() {
+  await clearAuthSession();
+  queryClient.clear();
+}
+
 export default function MoreScreen() {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [user] = useAuthUser();
   const initials = user?.name
     .split(" ")
@@ -77,9 +88,8 @@ export default function MoreScreen() {
     .join("")
     .toUpperCase();
 
-  const handleSignOut = async () => {
-    await clearAuthSession();
-    queryClient.clear();
+  const handleOpenStaffGuide = () => {
+    navigation.getParent<NavigationProp<ParamListBase>>()?.navigate("StaffGuide");
   };
 
   return (
@@ -105,20 +115,48 @@ export default function MoreScreen() {
           </Pressable>
         }
         ListHeaderComponent={
-          <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <Text className="text-base font-bold text-on-primary">
-                {initials || "ST"}
-              </Text>
+          <View className="mb-5 gap-3">
+            <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary">
+                <Text className="text-base font-bold text-on-primary">
+                  {initials || "ST"}
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-foreground">
+                  {user?.name ?? "Staff user"}
+                </Text>
+                <Text className="mt-0.5 text-sm capitalize text-muted">
+                  {user?.role ?? "staff"}
+                </Text>
+              </View>
             </View>
-            <View className="flex-1">
-              <Text className="text-base font-bold text-foreground">
-                {user?.name ?? "Staff user"}
+            <Pressable
+              accessibilityHint="Opens guided lessons for common store tasks"
+              accessibilityLabel="Learn how to use the system"
+              accessibilityRole="button"
+              className="min-h-20 flex-row items-center gap-3 rounded-2xl bg-primary px-4 py-3 active:bg-primary-pressed"
+              onPress={handleOpenStaffGuide}
+            >
+              <View className="h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+                <AppIcon
+                  name="help-and-support"
+                  color={colors.textOnPrimary}
+                  size={22}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-on-primary">
+                  Learn how to use the system
+                </Text>
+                <Text className="mt-0.5 text-xs text-white/70">
+                  Guided lessons for staff
+                </Text>
+              </View>
+              <Text className="rounded-full bg-brand-orange px-3 py-1.5 text-xs font-bold text-white">
+                Start
               </Text>
-              <Text className="mt-0.5 text-sm capitalize text-muted">
-                {user?.role ?? "staff"}
-              </Text>
-            </View>
+            </Pressable>
           </View>
         }
         maintainVisibleContentPosition
