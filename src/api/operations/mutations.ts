@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { operationQueryKeys } from "../../features/operations/queries";
+import type { ProductDetail } from "../../features/operations/productQueries";
 import {
   postApiCustomersStaff,
   postApiProducts,
   postApiProductVariants,
   postApiProductVariantsByProductVariantIdRestock,
 } from "../generated/sdk.gen";
-import { posQueryKeys } from "../pos/queries";
+import { type PosVariant, posQueryKeys } from "../pos/queries";
 
 export type CreateCustomerInput = {
   businessName?: string;
@@ -157,7 +158,57 @@ export function useRestockMutation() {
 
       return response.data.data;
     },
-    onSuccess: async () => {
+    onMutate: async (input) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: posQueryKeys.catalog() }),
+        queryClient.cancelQueries({
+          queryKey: ["operations", "products", "detail"],
+        }),
+      ]);
+
+      const previousCatalog = queryClient.getQueryData<PosVariant[]>(
+        posQueryKeys.catalog(),
+      );
+      const previousDetails = queryClient.getQueriesData<ProductDetail>({
+        queryKey: ["operations", "products", "detail"],
+      });
+
+      queryClient.setQueryData<PosVariant[]>(
+        posQueryKeys.catalog(),
+        (catalog) =>
+          catalog?.map((variant) =>
+            variant.id === input.variantId
+              ? { ...variant, stock: variant.stock + input.quantity }
+              : variant,
+          ),
+      );
+      queryClient.setQueriesData<ProductDetail>(
+        { queryKey: ["operations", "products", "detail"] },
+        (product) =>
+          product
+            ? {
+                ...product,
+                variants: product.variants.map((variant) =>
+                  variant.id === input.variantId
+                    ? { ...variant, stock: variant.stock + input.quantity }
+                    : variant,
+                ),
+              }
+            : product,
+      );
+
+      return { previousCatalog, previousDetails };
+    },
+    onError: (_error, _input, context) => {
+      queryClient.setQueryData(
+        posQueryKeys.catalog(),
+        context?.previousCatalog,
+      );
+      for (const [queryKey, product] of context?.previousDetails ?? []) {
+        queryClient.setQueryData(queryKey, product);
+      }
+    },
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: operationQueryKeys.products(),

@@ -7,9 +7,10 @@ import {
   type NavigationProp,
   type ParamListBase,
 } from "@react-navigation/native";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -34,13 +35,13 @@ export default function RestockScreen() {
   const catalogQuery = usePosCatalogQuery();
   const restock = useRestockMutation();
   const [search, setSearch] = useState("");
-  const [selectedVariant, setSelectedVariant] = useState<PosVariant | null>(
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     null,
   );
-  const { control, handleSubmit } = useForm<RestockFormValues>({
+  const { control, handleSubmit, reset } = useForm<RestockFormValues>({
     defaultValues: { note: "", quantity: "" },
   });
-  const variants = useMemo(() => {
+  const variants = (() => {
     const term = search.trim().toLowerCase();
     if (!term) return catalogQuery.data ?? [];
 
@@ -49,7 +50,10 @@ export default function RestockScreen() {
         value.toLowerCase().includes(term),
       ),
     );
-  }, [catalogQuery.data, search]);
+  })();
+  const selectedVariant =
+    catalogQuery.data?.find((variant) => variant.id === selectedVariantId) ??
+    null;
 
   const submit = handleSubmit(async (values) => {
     if (!selectedVariant) return;
@@ -60,14 +64,15 @@ export default function RestockScreen() {
         quantity: Number.parseInt(values.quantity, 10),
         variantId: selectedVariant.id,
       });
-      navigation.goBack();
+      reset();
+      Keyboard.dismiss();
     } catch {
       // Mutation state renders the API error below.
     }
   });
 
   const renderVariant = ({ item }: LegendListRenderItemProps<PosVariant>) => {
-    const selected = selectedVariant?.id === item.id;
+    const selected = selectedVariantId === item.id;
 
     return (
       <Pressable
@@ -78,7 +83,10 @@ export default function RestockScreen() {
             ? "rounded-2xl border-2 border-primary bg-primary-soft p-4"
             : "rounded-2xl border border-border bg-surface p-4 active:bg-surface-muted"
         }
-        onPress={() => setSelectedVariant(item)}
+        onPress={() => {
+          restock.reset();
+          setSelectedVariantId(item.id);
+        }}
       >
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
@@ -161,6 +169,12 @@ export default function RestockScreen() {
         {restock.isError ? (
           <Text accessibilityRole="alert" className="text-sm text-danger">
             {getApiErrorMessage(restock.error, "Stock could not be updated.")}
+          </Text>
+        ) : null}
+        {restock.isSuccess && selectedVariant ? (
+          <Text accessibilityRole="alert" className="text-sm text-success">
+            Stock updated. {selectedVariant.sku} now has {selectedVariant.stock}{" "}
+            in stock.
           </Text>
         ) : null}
         <Pressable
