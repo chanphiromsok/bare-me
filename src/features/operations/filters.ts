@@ -1,12 +1,18 @@
 import { atom } from "jotai";
 
-export type OrderFilter =
-  | "all"
-  | "cancelled"
-  | "draft"
-  | "fulfilled"
-  | "pending"
-  | "preorder"
-  | "returned";
+export type OrderStatusFilter = "all" | "fulfilled" | "pending";
+export type OrderCreatedSort = "newest" | "oldest";
 
-export const orderFilterAtom = atom<OrderFilter>("all");
+export type OrderListOptions = {
+  sort: OrderCreatedSort;
+  status: OrderStatusFilter;
+};
+
+export const defaultOrderListOptions: OrderListOptions = {
+  sort: "newest",
+  status: "all",
+};
+
+export const orderListOptionsAtom = atom<OrderListOptions>(
+  defaultOrderListOptions,
+);

@@ -41,10 +41,11 @@ const OperationTabs = createBottomTabNavigator({
         tabBarIcon: ({ color, size }) => (
           <AppIcon name="operation" color={color} size={size} />
         ),
-        tabBarStyle:
-          getFocusedRouteNameFromRoute(route) === "NewOrder"
-            ? { display: "none" }
-            : undefined,
+        tabBarStyle: ["NewOrder", "OrderFilters"].includes(
+          getFocusedRouteNameFromRoute(route) ?? "",
+        )
+          ? { display: "none" }
+          : undefined,
       }),
     },
     Products: {

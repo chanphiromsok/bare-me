@@ -5,7 +5,8 @@ import type {
   Customer as ApiCustomer,
   Order as ApiOrder,
 } from "../../api/generated/types.gen";
-import type { OrderFilter } from "./filters";
+import type { OrderListOptions } from "./filters";
+import { operationQueryKeys } from "./queries";
 
 export type Order = {
   customer: string;
@@ -67,28 +68,25 @@ function normalizeOrders(
   });
 }
 
-export function useOrderListQuery(filter: OrderFilter) {
+export function useOrderListQuery(options: OrderListOptions) {
+  const { sort, status } = options;
+
   return useQuery({
-    queryKey: ["operations", "orders", { filter }],
+    queryKey: operationQueryKeys.orders(options),
     queryFn: async () => {
       const response = await getApiOrders({
         query: {
+          filter: status === "all" ? undefined : { status },
           include: "customer,line_items",
           page: { limit: 100 },
-          sort: "-order_number",
+          sort: sort === "newest" ? "-inserted_at" : "inserted_at",
         },
         querySerializer: { allowReserved: true },
       });
-      const orders = normalizeOrders(
+      return normalizeOrders(
         response.data.data ?? [],
         response.data.included ?? [],
       );
-
-      if (filter === "all") return orders;
-      if (filter === "preorder")
-        return orders.filter((order) => order.orderKind === "preorder");
-
-      return orders.filter((order) => order.status.toLowerCase() === filter);
     },
   });
 }
