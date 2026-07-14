@@ -33,6 +33,7 @@ export type OrderDetail = {
   orderKind: "preorder" | "sale";
   paidCents: number;
   paymentState: "paid" | "partially_paid" | "unpaid";
+  paymentTerms: "credit" | "immediate";
   payments: {
     amountCents: number;
     id: string;
@@ -166,6 +167,7 @@ export function useOrderDetailQuery(orderId: string) {
           attributes.payment_state === "partially_paid"
             ? attributes.payment_state
             : "unpaid",
+        paymentTerms: attributes.payment_terms,
         payments,
         placedAt: optionalString(attributes.placed_at),
         returnReason: optionalString(attributes.return_reason),

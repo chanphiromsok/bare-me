@@ -7,13 +7,29 @@ import {
   useRoute,
   type RouteProp,
 } from "@react-navigation/native";
-import { Alert, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
-import { useOrderWorkflowMutations } from "../../api/orders/mutations";
+import { getApiErrorMessage } from "../../api/errorMessage";
+import {
+  type OrderPaymentMethod,
+  type RecordOrderPaymentInput,
+  useOrderWorkflowMutations,
+} from "../../api/orders/mutations";
 import {
   type OrderDetail,
   useOrderDetailQuery,
 } from "../../api/orders/queries";
+import TextController from "../../components/form/TextController";
 import AppIcon from "../../components/icons/AppIcon";
 import StatusPill from "../../components/operations/StatusPill";
 import TaskHeader from "../../components/operations/TaskHeader";
@@ -31,6 +47,16 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 type DetailRoute = RouteProp<OrdersStackParamList, "OrderDetail">;
 type DetailItem = OrderDetail["items"][number];
+type PaymentFormValues = { amount: string };
+
+const paymentMethodOptions: {
+  label: string;
+  value: OrderPaymentMethod;
+}[] = [
+  { label: "Cash", value: "cash" },
+  { label: "Bank transfer", value: "bank_transfer" },
+  { label: "Manual card", value: "card_manual" },
+];
 
 function formatCurrency(cents: number) {
   return currencyFormatter.format(cents / 100);
@@ -40,6 +66,17 @@ function formatDate(value?: string) {
   if (!value) return "Not recorded";
 
   return dateFormatter.format(new Date(value));
+}
+
+function parseCurrencyToCents(value: string): number | null {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value.trim().replaceAll(",", ""));
+  if (!match) return null;
+
+  const dollars = Number(match[1]);
+  const cents = Number((match[2] ?? "").padEnd(2, "0"));
+  const totalCents = dollars * 100 + cents;
+
+  return Number.isSafeInteger(totalCents) ? totalCents : null;
 }
 
 function statusTone(status: OrderDetail["status"]) {
@@ -138,6 +175,114 @@ function PaymentSummary({
   );
 }
 
+function ManualPaymentForm({
+  balanceCents,
+  error,
+  isPending,
+  onRecord,
+}: {
+  balanceCents: number;
+  error: unknown;
+  isPending: boolean;
+  onRecord: (input: RecordOrderPaymentInput) => Promise<unknown>;
+}) {
+  const [method, setMethod] = useState<OrderPaymentMethod>("cash");
+  const { control, handleSubmit, reset } = useForm<PaymentFormValues>({
+    defaultValues: { amount: "" },
+  });
+  const submit = handleSubmit(async ({ amount }) => {
+    const amountCents = parseCurrencyToCents(amount);
+    if (amountCents === null) return;
+
+    try {
+      await onRecord({ amountCents, method });
+      reset();
+      Keyboard.dismiss();
+    } catch {
+      // The mutation error below explains what staff can correct.
+    }
+  });
+
+  return (
+    <View className="rounded-2xl border border-border bg-surface p-4">
+      <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
+        Record customer payment
+      </Text>
+      <Text className="mt-2 text-sm leading-5 text-muted">
+        Enter what the customer paid now. Remaining balance: {formatCurrency(balanceCents)}.
+      </Text>
+      <View className="mt-4">
+        <TextController
+          control={control}
+          keyboardType="decimal-pad"
+          label="Amount paid (USD)"
+          name="amount"
+          placeholder="0.00"
+          rules={{
+            required: "Paid amount is required",
+            validate: (value) => {
+              const amountCents = parseCurrencyToCents(value);
+
+              if (amountCents === null || amountCents <= 0) {
+                return "Enter an amount greater than zero";
+              }
+
+              return (
+                amountCents <= balanceCents ||
+                `Cannot exceed ${formatCurrency(balanceCents)}`
+              );
+            },
+          }}
+        />
+      </View>
+      <Text className="mb-2 mt-4 text-xs font-bold uppercase tracking-[1px] text-subtle">
+        Payment method
+      </Text>
+      <View className="flex-row gap-2">
+        {paymentMethodOptions.map((option) => {
+          const selected = method === option.value;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              className={
+                selected
+                  ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
+                  : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
+              }
+              key={option.value}
+              onPress={() => setMethod(option.value)}
+            >
+              <Text
+                className={
+                  selected
+                    ? "text-center text-xs font-bold text-primary"
+                    : "text-center text-xs font-semibold text-muted"
+                }
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error ? (
+        <Text accessibilityRole="alert" className="mt-3 text-sm text-danger">
+          {getApiErrorMessage(error, "Payment could not be recorded.")}
+        </Text>
+      ) : null}
+      <View className="mt-4">
+        <ActionButton
+          disabled={isPending}
+          label={isPending ? "Recording payment…" : "Record payment"}
+          onPress={() => void submit()}
+        />
+      </View>
+    </View>
+  );
+}
+
 function ActionButton({
   disabled,
   label,
@@ -188,7 +333,6 @@ export default function OrderDetailScreen() {
     workflow.allocateStock.isError ||
     workflow.cancel.isError ||
     workflow.fulfill.isError ||
-    workflow.recordPayment.isError ||
     workflow.returnOrder.isError ||
     workflow.submit.isError;
   const balanceCents = order?.balanceCents ?? 0;
@@ -231,7 +375,10 @@ export default function OrderDetailScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1 bg-background"
+    >
       <TaskHeader
         onBack={() => navigation.goBack()}
         subtitle="Customer, items, payment, and order timeline."
@@ -303,6 +450,15 @@ export default function OrderDetailScreen() {
                 order={order}
                 paymentMethods={paymentMethods}
               />
+              {balanceCents > 0 &&
+              (order.status === "pending" || order.status === "fulfilled") ? (
+                <ManualPaymentForm
+                  balanceCents={balanceCents}
+                  error={workflow.recordPayment.error}
+                  isPending={workflow.recordPayment.isPending}
+                  onRecord={workflow.recordPayment.mutateAsync}
+                />
+              ) : null}
               <View className="rounded-2xl border border-border bg-surface p-4">
                 <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
                   Timeline
@@ -347,17 +503,8 @@ export default function OrderDetailScreen() {
                         onPress={() => workflow.allocateStock.mutate()}
                       />
                     ) : null}
-                    {order.status === "pending" && balanceCents > 0 ? (
-                      <ActionButton
-                        disabled={workflowPending}
-                        label={`Record cash payment · ${formatCurrency(balanceCents)}`}
-                        onPress={() =>
-                          workflow.recordPayment.mutate(balanceCents)
-                        }
-                      />
-                    ) : null}
                     {order.status === "pending" &&
-                    balanceCents === 0 &&
+                    (balanceCents === 0 || order.paymentTerms === "credit") &&
                     (order.orderKind === "sale" ||
                       order.fulfillmentStatus === "ready") ? (
                       <ActionButton
@@ -417,10 +564,12 @@ export default function OrderDetailScreen() {
             </View>
           ) : null
         }
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        keyboardShouldPersistTaps="handled"
         recycleItems
         renderItem={(props) => <ItemCard {...props} />}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
