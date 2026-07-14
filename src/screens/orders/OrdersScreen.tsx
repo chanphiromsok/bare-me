@@ -32,6 +32,7 @@ const filters: { label: string; value: OrderFilter }[] = [
   { label: "All", value: "all" },
   { label: "Draft", value: "draft" },
   { label: "Pending", value: "pending" },
+  { label: "Preorders", value: "preorder" },
   { label: "Fulfilled", value: "fulfilled" },
   { label: "Returned", value: "returned" },
   { label: "Cancelled", value: "cancelled" },
@@ -59,6 +60,11 @@ function OrderCard({ item: order, onPress }: OrderCardProps) {
               Order {order.number}
             </Text>
             <Text className="mt-0.5 text-sm text-muted">{order.customer}</Text>
+            {order.orderKind === "preorder" ? (
+              <Text className="mt-1 text-xs font-bold uppercase text-warning">
+                Preorder
+              </Text>
+            ) : null}
           </View>
         </View>
         <StatusPill

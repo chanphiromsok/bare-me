@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
+  patchApiOrdersByIdAllocateStock,
   patchApiOrdersByIdCancel,
   patchApiOrdersByIdFulfill,
   patchApiOrdersByIdReturn,
@@ -21,6 +22,14 @@ export function useOrderWorkflowMutations(orderId: string) {
   const submit = useMutation({
     mutationFn: () =>
       patchApiOrdersByIdSubmit({
+        body: orderDocument(orderId),
+        path: { id: orderId },
+      }),
+    onSuccess: refreshOrders,
+  });
+  const allocateStock = useMutation({
+    mutationFn: () =>
+      patchApiOrdersByIdAllocateStock({
         body: orderDocument(orderId),
         path: { id: orderId },
       }),
@@ -80,5 +89,12 @@ export function useOrderWorkflowMutations(orderId: string) {
     onSuccess: refreshOrders,
   });
 
-  return { cancel, fulfill, recordPayment, returnOrder, submit };
+  return {
+    allocateStock,
+    cancel,
+    fulfill,
+    recordPayment,
+    returnOrder,
+    submit,
+  };
 }

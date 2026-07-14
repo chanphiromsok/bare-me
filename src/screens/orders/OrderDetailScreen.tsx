@@ -117,12 +117,14 @@ export default function OrderDetailScreen() {
   const workflow = useOrderWorkflowMutations(route.params.orderId);
   const order = orderQuery.data;
   const workflowPending =
+    workflow.allocateStock.isPending ||
     workflow.cancel.isPending ||
     workflow.fulfill.isPending ||
     workflow.recordPayment.isPending ||
     workflow.returnOrder.isPending ||
     workflow.submit.isPending;
   const workflowError =
+    workflow.allocateStock.isError ||
     workflow.cancel.isError ||
     workflow.fulfill.isError ||
     workflow.recordPayment.isError ||
@@ -142,7 +144,9 @@ export default function OrderDetailScreen() {
   const confirmCancel = () => {
     Alert.alert(
       "Cancel this order?",
-      "Committed stock will be restored. This action cannot be undone.",
+      order?.orderKind === "preorder"
+        ? "Any reserved stock will be released. This action cannot be undone."
+        : "Committed stock will be restored. This action cannot be undone.",
       [
         { style: "cancel", text: "Keep order" },
         {
@@ -210,10 +214,24 @@ export default function OrderDetailScreen() {
                     </Text>
                   </View>
                   <StatusPill
-                    label={order.status}
+                    label={
+                      order.orderKind === "preorder"
+                        ? order.fulfillmentStatus.replace("_", " ")
+                        : order.status
+                    }
                     tone={statusTone(order.status)}
                   />
                 </View>
+                {order.orderKind === "preorder" ? (
+                  <View className="mt-4 rounded-xl bg-warning-soft p-3">
+                    <Text className="text-xs font-bold uppercase text-warning">
+                      Preorder
+                    </Text>
+                    <Text className="mt-1 text-sm leading-5 text-muted">
+                      Stock is deducted only when this order is fulfilled.
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Text className="text-xs font-bold uppercase tracking-[1px] text-subtle">
                 Items · {order.items.length}
@@ -293,6 +311,15 @@ export default function OrderDetailScreen() {
                         onPress={() => workflow.submit.mutate()}
                       />
                     ) : null}
+                    {order.orderKind === "preorder" &&
+                    order.status === "pending" &&
+                    order.fulfillmentStatus === "awaiting_stock" ? (
+                      <ActionButton
+                        disabled={workflowPending}
+                        label="Allocate available stock"
+                        onPress={() => workflow.allocateStock.mutate()}
+                      />
+                    ) : null}
                     {order.status === "pending" && balanceCents > 0 ? (
                       <ActionButton
                         disabled={workflowPending}
@@ -302,10 +329,17 @@ export default function OrderDetailScreen() {
                         }
                       />
                     ) : null}
-                    {order.status === "pending" && balanceCents === 0 ? (
+                    {order.status === "pending" &&
+                    balanceCents === 0 &&
+                    (order.orderKind === "sale" ||
+                      order.fulfillmentStatus === "ready") ? (
                       <ActionButton
                         disabled={workflowPending}
-                        label="Fulfill order"
+                        label={
+                          order.orderKind === "preorder"
+                            ? "Complete pickup or delivery"
+                            : "Fulfill order"
+                        }
                         onPress={() => workflow.fulfill.mutate()}
                       />
                     ) : null}

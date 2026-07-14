@@ -12,6 +12,7 @@ export type Order = {
   id: string;
   items: string;
   number: string;
+  orderKind: "preorder" | "sale";
   status: "Cancelled" | "Draft" | "Fulfilled" | "Pending" | "Returned";
   total: string;
 };
@@ -58,6 +59,7 @@ function normalizeOrders(
         id: order.id,
         items: `${lineCount} ${lineCount === 1 ? "item" : "items"}`,
         number: `#${attributes.order_number}`,
+        orderKind: attributes.order_kind,
         status,
         total: currencyFormatter.format(totalCents / 100),
       },
@@ -82,9 +84,11 @@ export function useOrderListQuery(filter: OrderFilter) {
         response.data.included ?? [],
       );
 
-      return filter === "all"
-        ? orders
-        : orders.filter((order) => order.status.toLowerCase() === filter);
+      if (filter === "all") return orders;
+      if (filter === "preorder")
+        return orders.filter((order) => order.orderKind === "preorder");
+
+      return orders.filter((order) => order.status.toLowerCase() === filter);
     },
   });
 }

@@ -4,8 +4,8 @@ import { type InfiniteData, infiniteQueryOptions, type QueryClient, queryOptions
 import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
-import { deleteApiOrdersByOrderIdLineItemsById, getApiCustomers, getApiOrders, getApiOrdersById, getApiProducts, getApiProductsById, getApiProductVariants, getApiProductVariantsById, getApiProductVariantsByProductVariantIdStockMovements, type Options, patchApiCustomersByIdConfirm, patchApiOrdersByIdCancel, patchApiOrdersByIdDiscount, patchApiOrdersByIdFulfill, patchApiOrdersByIdReturn, patchApiOrdersByIdSubmit, patchApiOrdersByOrderIdLineItemsById, patchApiPaymentsByIdVoid, patchApiProductsById, patchApiProductsByIdArchive, patchApiProductVariantsById, postApiCustomersRegister, postApiCustomersSignIn, postApiCustomersStaff, postApiOrders, postApiOrdersByOrderIdLineItems, postApiOrdersByOrderIdPayments, postApiProducts, postApiProductVariants, postApiProductVariantsByProductVariantIdAdjust, postApiProductVariantsByProductVariantIdRestock, postApiStaffSignIn } from '../sdk.gen';
-import type { DeleteApiOrdersByOrderIdLineItemsByIdData, DeleteApiOrdersByOrderIdLineItemsByIdError, GetApiCustomersData, GetApiCustomersError, GetApiCustomersResponse, GetApiOrdersByIdData, GetApiOrdersByIdError, GetApiOrdersByIdResponse, GetApiOrdersData, GetApiOrdersError, GetApiOrdersResponse, GetApiProductsByIdData, GetApiProductsByIdError, GetApiProductsByIdResponse, GetApiProductsData, GetApiProductsError, GetApiProductsResponse, GetApiProductVariantsByIdData, GetApiProductVariantsByIdError, GetApiProductVariantsByIdResponse, GetApiProductVariantsByProductVariantIdStockMovementsData, GetApiProductVariantsByProductVariantIdStockMovementsError, GetApiProductVariantsByProductVariantIdStockMovementsResponse, GetApiProductVariantsData, GetApiProductVariantsError, GetApiProductVariantsResponse, PatchApiCustomersByIdConfirmData, PatchApiCustomersByIdConfirmError, PatchApiCustomersByIdConfirmResponse, PatchApiOrdersByIdCancelData, PatchApiOrdersByIdCancelError, PatchApiOrdersByIdCancelResponse, PatchApiOrdersByIdDiscountData, PatchApiOrdersByIdDiscountError, PatchApiOrdersByIdDiscountResponse, PatchApiOrdersByIdFulfillData, PatchApiOrdersByIdFulfillError, PatchApiOrdersByIdFulfillResponse, PatchApiOrdersByIdReturnData, PatchApiOrdersByIdReturnError, PatchApiOrdersByIdReturnResponse, PatchApiOrdersByIdSubmitData, PatchApiOrdersByIdSubmitError, PatchApiOrdersByIdSubmitResponse, PatchApiOrdersByOrderIdLineItemsByIdData, PatchApiOrdersByOrderIdLineItemsByIdError, PatchApiOrdersByOrderIdLineItemsByIdResponse, PatchApiPaymentsByIdVoidData, PatchApiPaymentsByIdVoidError, PatchApiPaymentsByIdVoidResponse, PatchApiProductsByIdArchiveData, PatchApiProductsByIdArchiveError, PatchApiProductsByIdArchiveResponse, PatchApiProductsByIdData, PatchApiProductsByIdError, PatchApiProductsByIdResponse, PatchApiProductVariantsByIdData, PatchApiProductVariantsByIdError, PatchApiProductVariantsByIdResponse, PostApiCustomersRegisterData, PostApiCustomersRegisterError, PostApiCustomersRegisterResponse, PostApiCustomersSignInData, PostApiCustomersSignInError, PostApiCustomersSignInResponse, PostApiCustomersStaffData, PostApiCustomersStaffError, PostApiCustomersStaffResponse, PostApiOrdersByOrderIdLineItemsData, PostApiOrdersByOrderIdLineItemsError, PostApiOrdersByOrderIdLineItemsResponse, PostApiOrdersByOrderIdPaymentsData, PostApiOrdersByOrderIdPaymentsError, PostApiOrdersByOrderIdPaymentsResponse, PostApiOrdersData, PostApiOrdersError, PostApiOrdersResponse, PostApiProductsData, PostApiProductsError, PostApiProductsResponse, PostApiProductVariantsByProductVariantIdAdjustData, PostApiProductVariantsByProductVariantIdAdjustError, PostApiProductVariantsByProductVariantIdAdjustResponse, PostApiProductVariantsByProductVariantIdRestockData, PostApiProductVariantsByProductVariantIdRestockError, PostApiProductVariantsByProductVariantIdRestockResponse, PostApiProductVariantsData, PostApiProductVariantsError, PostApiProductVariantsResponse, PostApiStaffSignInData, PostApiStaffSignInError, PostApiStaffSignInResponse } from '../types.gen';
+import { deleteApiOrdersByOrderIdLineItemsById, getApiCustomers, getApiOrders, getApiOrdersById, getApiProducts, getApiProductsById, getApiProductVariants, getApiProductVariantsById, getApiProductVariantsByProductVariantIdStockMovements, type Options, patchApiCustomersByIdConfirm, patchApiOrdersByIdAllocateStock, patchApiOrdersByIdCancel, patchApiOrdersByIdConfirmPreorder, patchApiOrdersByIdDiscount, patchApiOrdersByIdFulfill, patchApiOrdersByIdReturn, patchApiOrdersByIdSubmit, patchApiOrdersByOrderIdLineItemsById, patchApiPaymentsByIdVoid, patchApiProductsById, patchApiProductsByIdArchive, patchApiProductVariantsById, postApiCustomersRegister, postApiCustomersSignIn, postApiCustomersStaff, postApiOrders, postApiOrdersByOrderIdLineItems, postApiOrdersByOrderIdPayments, postApiProducts, postApiProductVariants, postApiProductVariantsByProductVariantIdAdjust, postApiProductVariantsByProductVariantIdRestock, postApiStaffSignIn } from '../sdk.gen';
+import type { DeleteApiOrdersByOrderIdLineItemsByIdData, DeleteApiOrdersByOrderIdLineItemsByIdError, GetApiCustomersData, GetApiCustomersError, GetApiCustomersResponse, GetApiOrdersByIdData, GetApiOrdersByIdError, GetApiOrdersByIdResponse, GetApiOrdersData, GetApiOrdersError, GetApiOrdersResponse, GetApiProductsByIdData, GetApiProductsByIdError, GetApiProductsByIdResponse, GetApiProductsData, GetApiProductsError, GetApiProductsResponse, GetApiProductVariantsByIdData, GetApiProductVariantsByIdError, GetApiProductVariantsByIdResponse, GetApiProductVariantsByProductVariantIdStockMovementsData, GetApiProductVariantsByProductVariantIdStockMovementsError, GetApiProductVariantsByProductVariantIdStockMovementsResponse, GetApiProductVariantsData, GetApiProductVariantsError, GetApiProductVariantsResponse, PatchApiCustomersByIdConfirmData, PatchApiCustomersByIdConfirmError, PatchApiCustomersByIdConfirmResponse, PatchApiOrdersByIdAllocateStockData, PatchApiOrdersByIdAllocateStockError, PatchApiOrdersByIdAllocateStockResponse, PatchApiOrdersByIdCancelData, PatchApiOrdersByIdCancelError, PatchApiOrdersByIdCancelResponse, PatchApiOrdersByIdConfirmPreorderData, PatchApiOrdersByIdConfirmPreorderError, PatchApiOrdersByIdConfirmPreorderResponse, PatchApiOrdersByIdDiscountData, PatchApiOrdersByIdDiscountError, PatchApiOrdersByIdDiscountResponse, PatchApiOrdersByIdFulfillData, PatchApiOrdersByIdFulfillError, PatchApiOrdersByIdFulfillResponse, PatchApiOrdersByIdReturnData, PatchApiOrdersByIdReturnError, PatchApiOrdersByIdReturnResponse, PatchApiOrdersByIdSubmitData, PatchApiOrdersByIdSubmitError, PatchApiOrdersByIdSubmitResponse, PatchApiOrdersByOrderIdLineItemsByIdData, PatchApiOrdersByOrderIdLineItemsByIdError, PatchApiOrdersByOrderIdLineItemsByIdResponse, PatchApiPaymentsByIdVoidData, PatchApiPaymentsByIdVoidError, PatchApiPaymentsByIdVoidResponse, PatchApiProductsByIdArchiveData, PatchApiProductsByIdArchiveError, PatchApiProductsByIdArchiveResponse, PatchApiProductsByIdData, PatchApiProductsByIdError, PatchApiProductsByIdResponse, PatchApiProductVariantsByIdData, PatchApiProductVariantsByIdError, PatchApiProductVariantsByIdResponse, PostApiCustomersRegisterData, PostApiCustomersRegisterError, PostApiCustomersRegisterResponse, PostApiCustomersSignInData, PostApiCustomersSignInError, PostApiCustomersSignInResponse, PostApiCustomersStaffData, PostApiCustomersStaffError, PostApiCustomersStaffResponse, PostApiOrdersByOrderIdLineItemsData, PostApiOrdersByOrderIdLineItemsError, PostApiOrdersByOrderIdLineItemsResponse, PostApiOrdersByOrderIdPaymentsData, PostApiOrdersByOrderIdPaymentsError, PostApiOrdersByOrderIdPaymentsResponse, PostApiOrdersData, PostApiOrdersError, PostApiOrdersResponse, PostApiProductsData, PostApiProductsError, PostApiProductsResponse, PostApiProductVariantsByProductVariantIdAdjustData, PostApiProductVariantsByProductVariantIdAdjustError, PostApiProductVariantsByProductVariantIdAdjustResponse, PostApiProductVariantsByProductVariantIdRestockData, PostApiProductVariantsByProductVariantIdRestockError, PostApiProductVariantsByProductVariantIdRestockResponse, PostApiProductVariantsData, PostApiProductVariantsError, PostApiProductVariantsResponse, PostApiStaffSignInData, PostApiStaffSignInError, PostApiStaffSignInResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseURL' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -290,12 +290,46 @@ export const getApiOrdersByIdOptions = (options: Options<GetApiOrdersByIdData>) 
 export const getApiOrdersByIdSetQueryData = (queryClient: QueryClient, options: Options<GetApiOrdersByIdData>, updater: GetApiOrdersByIdResponse | undefined | ((old: GetApiOrdersByIdResponse | undefined) => GetApiOrdersByIdResponse | undefined)) => queryClient.setQueryData(getApiOrdersByIdOptions(options).queryKey, updater);
 
 /**
+ * /orders/:id/allocate-stock operation on order resource
+ */
+export const patchApiOrdersByIdAllocateStockMutation = (options?: Partial<Options<PatchApiOrdersByIdAllocateStockData>>): UseMutationOptions<PatchApiOrdersByIdAllocateStockResponse, AxiosError<PatchApiOrdersByIdAllocateStockError>, Options<PatchApiOrdersByIdAllocateStockData>> => {
+    const mutationOptions: UseMutationOptions<PatchApiOrdersByIdAllocateStockResponse, AxiosError<PatchApiOrdersByIdAllocateStockError>, Options<PatchApiOrdersByIdAllocateStockData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await patchApiOrdersByIdAllocateStock({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * /orders/:id/cancel operation on order resource
  */
 export const patchApiOrdersByIdCancelMutation = (options?: Partial<Options<PatchApiOrdersByIdCancelData>>): UseMutationOptions<PatchApiOrdersByIdCancelResponse, AxiosError<PatchApiOrdersByIdCancelError>, Options<PatchApiOrdersByIdCancelData>> => {
     const mutationOptions: UseMutationOptions<PatchApiOrdersByIdCancelResponse, AxiosError<PatchApiOrdersByIdCancelError>, Options<PatchApiOrdersByIdCancelData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await patchApiOrdersByIdCancel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * /orders/:id/confirm-preorder operation on order resource
+ */
+export const patchApiOrdersByIdConfirmPreorderMutation = (options?: Partial<Options<PatchApiOrdersByIdConfirmPreorderData>>): UseMutationOptions<PatchApiOrdersByIdConfirmPreorderResponse, AxiosError<PatchApiOrdersByIdConfirmPreorderError>, Options<PatchApiOrdersByIdConfirmPreorderData>> => {
+    const mutationOptions: UseMutationOptions<PatchApiOrdersByIdConfirmPreorderResponse, AxiosError<PatchApiOrdersByIdConfirmPreorderError>, Options<PatchApiOrdersByIdConfirmPreorderData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await patchApiOrdersByIdConfirmPreorder({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

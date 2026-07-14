@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { operationQueryKeys } from "../../features/operations/queries";
 import {
+  patchApiOrdersByIdConfirmPreorder,
   patchApiOrdersByIdFulfill,
   patchApiOrdersByIdSubmit,
   postApiOrders,
@@ -19,6 +20,7 @@ export type PosCheckoutInput = {
     quantity: number;
   }[];
   paymentMethod: PosPaymentMethod;
+  saleType: "preorder" | "sale";
   totalCents: number;
 };
 
@@ -30,12 +32,17 @@ export function usePosCheckoutMutation() {
       customerId,
       items,
       paymentMethod,
+      saleType,
       totalCents,
     }: PosCheckoutInput) => {
       const orderResponse = await postApiOrders({
         body: {
           data: {
-            attributes: { customer_id: customerId },
+            attributes: {
+              customer_id: customerId,
+              order_kind: saleType,
+              sales_channel: saleType === "preorder" ? "group_chat" : "pos",
+            },
             type: "order",
           },
         },
@@ -46,19 +53,32 @@ export function usePosCheckoutMutation() {
         throw new Error("The server did not return the new order.");
       }
 
-      for (const item of items) {
-        await postApiOrdersByOrderIdLineItems({
-          body: {
-            data: {
-              attributes: {
-                product_variant_id: item.productVariantId,
-                quantity: item.quantity,
+      await Promise.all(
+        items.map((item) =>
+          postApiOrdersByOrderIdLineItems({
+            body: {
+              data: {
+                attributes: {
+                  product_variant_id: item.productVariantId,
+                  quantity: item.quantity,
+                },
+                type: "order_line_item",
               },
-              type: "order_line_item",
             },
+            path: { order_id: order.id },
+          }),
+        ),
+      );
+
+      if (saleType === "preorder") {
+        const confirmedResponse = await patchApiOrdersByIdConfirmPreorder({
+          body: {
+            data: { attributes: {}, id: order.id, type: "order" },
           },
-          path: { order_id: order.id },
+          path: { id: order.id },
         });
+
+        return confirmedResponse.data.data;
       }
 
       await patchApiOrdersByIdSubmit({

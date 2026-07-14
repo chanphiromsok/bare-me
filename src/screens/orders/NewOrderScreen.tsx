@@ -3,7 +3,7 @@ import {
   type LegendListRenderItemProps,
 } from "@legendapp/list/react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useMemo, useState } from "react";
+import { useReducer, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { PosVariant } from "../../api/pos/queries";
@@ -17,7 +17,12 @@ import {
 } from "../../api/pos/usePosCheckoutMutation";
 import AppIcon from "../../components/icons/AppIcon";
 import SearchField from "../../components/operations/SearchField";
-import { colors } from "../../theme";
+import { colors } from "../../theme/colors";
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  currency: "USD",
+  style: "currency",
+});
 
 const paymentMethods: {
   label: string;
@@ -28,20 +33,145 @@ const paymentMethods: {
   { label: "Manual card", value: "card_manual" },
 ];
 
+type OrderSelectionState = {
+  quantities: Record<string, number>;
+  saleType: "preorder" | "sale";
+};
+
+type OrderSelectionAction =
+  | { saleType: "preorder" | "sale"; type: "changeSaleType" }
+  | { quantity: number; type: "changeQuantity"; variantId: string };
+
+function orderSelectionReducer(
+  state: OrderSelectionState,
+  action: OrderSelectionAction,
+): OrderSelectionState {
+  if (action.type === "changeSaleType") {
+    return { quantities: {}, saleType: action.saleType };
+  }
+
+  return {
+    ...state,
+    quantities: {
+      ...state.quantities,
+      [action.variantId]: Math.max(action.quantity, 0),
+    },
+  };
+}
+
 function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cents / 100);
+  return currencyFormatter.format(cents / 100);
+}
+
+function OrderTypeSelector({
+  onChange,
+  value,
+}: {
+  onChange: (value: "preorder" | "sale") => void;
+  value: "preorder" | "sale";
+}) {
+  return (
+    <View>
+      <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
+        Order type
+      </Text>
+      <View className="flex-row rounded-2xl bg-surface-muted p-1">
+        {(["sale", "preorder"] as const).map((type) => {
+          const selected = value === type;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              className={
+                selected
+                  ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-surface"
+                  : "min-h-11 flex-1 items-center justify-center rounded-xl"
+              }
+              key={type}
+              onPress={() => onChange(type)}
+            >
+              <Text
+                className={
+                  selected
+                    ? "font-bold text-primary"
+                    : "font-semibold text-muted"
+                }
+              >
+                {type === "sale" ? "In-stock sale" : "Preorder"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {value === "preorder" ? (
+        <Text className="mt-2 text-sm leading-5 text-muted">
+          Use for chat orders even when stock is zero. Payment and stock
+          allocation can be recorded later.
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function PaymentSelector({
+  onChange,
+  value,
+}: {
+  onChange: (value: PosPaymentMethod) => void;
+  value: PosPaymentMethod;
+}) {
+  return (
+    <>
+      <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
+        3 · Payment
+      </Text>
+      <View className="mb-3 flex-row gap-2">
+        {paymentMethods.map((method) => {
+          const selected = value === method.value;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              className={
+                selected
+                  ? "min-h-11 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
+                  : "min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-2"
+              }
+              key={method.value}
+              onPress={() => onChange(method.value)}
+            >
+              <Text
+                className={
+                  selected
+                    ? "text-center text-xs font-bold text-primary"
+                    : "text-center text-xs font-semibold text-muted"
+                }
+              >
+                {method.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
 }
 
 type ProductRowProps = LegendListRenderItemProps<PosVariant> & {
+  isPreorder: boolean;
   onChangeQuantity: (variantId: string, nextQuantity: number) => void;
   quantity: number;
 };
 
-function ProductRow({ item, onChangeQuantity, quantity }: ProductRowProps) {
-  const maximumQuantity = Math.max(item.stock, 0);
+function ProductRow({
+  isPreorder,
+  item,
+  onChangeQuantity,
+  quantity,
+}: ProductRowProps) {
+  const maximumQuantity = isPreorder
+    ? Number.POSITIVE_INFINITY
+    : Math.max(item.stock, 0);
 
   return (
     <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4">
@@ -58,13 +188,18 @@ function ProductRow({ item, onChangeQuantity, quantity }: ProductRowProps) {
         <Text className="mt-1 text-sm font-semibold text-primary">
           {formatCurrency(item.priceCents)} · {item.stock} available
         </Text>
+        {isPreorder ? (
+          <Text className="mt-1 text-xs font-bold uppercase text-warning">
+            Preorder · stock is not deducted now
+          </Text>
+        ) : null}
       </View>
       <View className="items-center gap-1.5">
         <View className="flex-row items-center gap-2">
           <Pressable
             accessibilityLabel={`Remove one ${item.name}`}
             accessibilityRole="button"
-            className="h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-muted disabled:opacity-40"
+            className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-muted disabled:opacity-40"
             disabled={quantity === 0}
             onPress={() => onChangeQuantity(item.id, quantity - 1)}
           >
@@ -76,7 +211,7 @@ function ProductRow({ item, onChangeQuantity, quantity }: ProductRowProps) {
           <Pressable
             accessibilityLabel={`Add one ${item.name}`}
             accessibilityRole="button"
-            className="h-9 w-9 items-center justify-center rounded-full bg-primary disabled:opacity-40"
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary disabled:opacity-40"
             disabled={maximumQuantity === 0 || quantity >= maximumQuantity}
             onPress={() => onChangeQuantity(item.id, quantity + 1)}
           >
@@ -96,9 +231,12 @@ export default function NewOrderScreen() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
   const [search, setSearch] = useState("");
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [{ quantities, saleType }, dispatchSelection] = useReducer(
+    orderSelectionReducer,
+    { quantities: {}, saleType: "sale" },
+  );
 
-  const variants = useMemo(() => {
+  const variants = (() => {
     const query = search.trim().toLowerCase();
     const catalog = catalogQuery.data ?? [];
 
@@ -109,17 +247,13 @@ export default function NewOrderScreen() {
         value.toLowerCase().includes(query),
       ),
     );
-  }, [catalogQuery.data, search]);
+  })();
 
-  const cart = useMemo(
-    () =>
-      (catalogQuery.data ?? []).flatMap((variant) => {
-        const quantity = quantities[variant.id] ?? 0;
+  const cart = (catalogQuery.data ?? []).flatMap((variant) => {
+    const quantity = quantities[variant.id] ?? 0;
 
-        return quantity > 0 ? [{ quantity, variant }] : [];
-      }),
-    [catalogQuery.data, quantities],
-  );
+    return quantity > 0 ? [{ quantity, variant }] : [];
+  });
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const totalCents = cart.reduce(
     (total, item) => total + item.quantity * item.variant.priceCents,
@@ -129,10 +263,15 @@ export default function NewOrderScreen() {
     Boolean(selectedCustomerId) && itemCount > 0 && !checkoutMutation.isPending;
 
   const changeQuantity = (variantId: string, nextQuantity: number) => {
-    setQuantities((current) => ({
-      ...current,
-      [variantId]: Math.max(nextQuantity, 0),
-    }));
+    dispatchSelection({
+      quantity: nextQuantity,
+      type: "changeQuantity",
+      variantId,
+    });
+  };
+
+  const changeSaleType = (type: "preorder" | "sale") => {
+    dispatchSelection({ saleType: type, type: "changeSaleType" });
   };
 
   const handleCheckout = async () => {
@@ -146,6 +285,7 @@ export default function NewOrderScreen() {
           quantity,
         })),
         paymentMethod,
+        saleType,
         totalCents,
       });
       navigation.goBack();
@@ -166,9 +306,13 @@ export default function NewOrderScreen() {
           <Text className="text-2xl text-primary">‹</Text>
         </Pressable>
         <View className="flex-1">
-          <Text className="text-2xl font-bold text-foreground">New sale</Text>
+          <Text className="text-2xl font-bold text-foreground">
+            {saleType === "preorder" ? "New preorder" : "New sale"}
+          </Text>
           <Text className="text-sm text-muted">
-            Customer, items, and payment
+            {saleType === "preorder"
+              ? "Customer, items, and expected total"
+              : "Customer, items, and payment"}
           </Text>
         </View>
         <View className="rounded-full bg-primary-soft px-3 py-2">
@@ -189,12 +333,15 @@ export default function NewOrderScreen() {
             <Text className="text-center text-sm text-muted">
               {catalogQuery.isPending
                 ? "Loading products…"
-                : "No in-stock variants match your search."}
+                : saleType === "preorder"
+                  ? "No variants match your search."
+                  : "No in-stock variants match your search."}
             </Text>
           </View>
         }
         ListHeaderComponent={
           <View className="mb-4 gap-4">
+            <OrderTypeSelector onChange={changeSaleType} value={saleType} />
             <View>
               <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
                 1 · Customer
@@ -263,6 +410,7 @@ export default function NewOrderScreen() {
         renderItem={(props) => (
           <ProductRow
             {...props}
+            isPreorder={saleType === "preorder"}
             onChangeQuantity={changeQuantity}
             quantity={quantities[props.item.id] ?? 0}
           />
@@ -271,41 +419,17 @@ export default function NewOrderScreen() {
       />
 
       <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-surface px-5 pb-safe-offset-4 pt-4">
-        <Text className="mb-2 text-xs font-bold uppercase tracking-[1px] text-subtle">
-          3 · Payment
-        </Text>
-        <View className="mb-3 flex-row gap-2">
-          {paymentMethods.map((method) => {
-            const selected = paymentMethod === method.value;
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                className={
-                  selected
-                    ? "min-h-10 flex-1 items-center justify-center rounded-xl bg-primary-soft px-2"
-                    : "min-h-10 flex-1 items-center justify-center rounded-xl border border-border px-2"
-                }
-                key={method.value}
-                onPress={() => setPaymentMethod(method.value)}
-              >
-                <Text
-                  className={
-                    selected
-                      ? "text-center text-xs font-bold text-primary"
-                      : "text-center text-xs font-semibold text-muted"
-                  }
-                >
-                  {method.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {saleType === "sale" ? (
+          <PaymentSelector onChange={setPaymentMethod} value={paymentMethod} />
+        ) : (
+          <Text className="mb-3 text-sm text-muted">
+            No inventory movement or payment will be recorded at confirmation.
+          </Text>
+        )}
         {checkoutMutation.isError ? (
           <Text accessibilityRole="alert" className="mb-2 text-sm text-danger">
-            Sale could not be completed. Check stock and connection, then try
-            again.
+            {saleType === "preorder" ? "Preorder" : "Sale"} could not be
+            completed. Check the connection, then try again.
           </Text>
         ) : null}
         <Pressable
@@ -317,8 +441,12 @@ export default function NewOrderScreen() {
           <View>
             <Text className="text-xs font-semibold text-primary-soft">
               {checkoutMutation.isPending
-                ? "Completing sale…"
-                : "Complete sale"}
+                ? saleType === "preorder"
+                  ? "Confirming preorder…"
+                  : "Completing sale…"
+                : saleType === "preorder"
+                  ? "Confirm preorder"
+                  : "Complete sale"}
             </Text>
             <Text className="text-base font-bold text-on-primary">
               {selectedCustomerId

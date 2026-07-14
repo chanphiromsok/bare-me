@@ -140,6 +140,10 @@ export type ProductVariant = {
         /**
          * Field included by default.
          */
+        reserved_quantity: number;
+        /**
+         * Field included by default.
+         */
         size: string;
         /**
          * Field included by default.
@@ -202,6 +206,24 @@ export type ProductVariantFilterBarcode = {
  * Filters the query to results matching the given filter object
  */
 export type OrderFilter = unknown;
+
+export type OrderFilterExternalReference = {
+    contains?: string;
+    eq?: string;
+    greater_than?: string;
+    greater_than_or_equal?: string;
+    ilike?: string;
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: string;
+    less_than_or_equal?: string;
+    like?: string;
+    not_eq?: string;
+    string_ends_with?: string;
+    string_starts_with?: string;
+};
 
 export type StockMovementFilterNote = {
     contains?: string;
@@ -359,6 +381,19 @@ export type PaymentFilterVoidedAt = {
     less_than?: unknown;
     less_than_or_equal?: unknown;
     not_eq?: unknown;
+};
+
+export type ProductVariantFilterReservedQuantity = {
+    eq?: number;
+    greater_than?: number;
+    greater_than_or_equal?: number;
+    in?: Array<number>;
+    is_distinct_from?: number;
+    is_nil?: boolean;
+    is_not_distinct_from?: number;
+    less_than?: number;
+    less_than_or_equal?: number;
+    not_eq?: number;
 };
 
 /**
@@ -652,6 +687,32 @@ export type OrderLineItem = {
     type: string;
 };
 
+export type OrderFilterExpectedAt = {
+    eq?: unknown;
+    greater_than?: unknown;
+    greater_than_or_equal?: unknown;
+    in?: Array<unknown>;
+    is_distinct_from?: unknown;
+    is_nil?: boolean;
+    is_not_distinct_from?: unknown;
+    less_than?: unknown;
+    less_than_or_equal?: unknown;
+    not_eq?: unknown;
+};
+
+export type OrderFilterSalesChannel = {
+    eq?: 'pos' | 'group_chat' | 'other';
+    greater_than?: 'pos' | 'group_chat' | 'other';
+    greater_than_or_equal?: 'pos' | 'group_chat' | 'other';
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: 'pos' | 'group_chat' | 'other';
+    less_than_or_equal?: 'pos' | 'group_chat' | 'other';
+    not_eq?: 'pos' | 'group_chat' | 'other';
+};
+
 /**
  * A "Resource object" representing a customer
  */
@@ -760,7 +821,23 @@ export type Order = {
         /**
          * Field included by default.
          */
+        expected_at?: unknown;
+        /**
+         * Field included by default.
+         */
+        external_reference?: string | null | unknown;
+        /**
+         * Field included by default.
+         */
         fulfilled_at?: unknown;
+        /**
+         * Field included by default.
+         */
+        fulfillment_status: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+        /**
+         * Field included by default.
+         */
+        order_kind: 'sale' | 'preorder';
         /**
          * Field included by default.
          */
@@ -782,6 +859,10 @@ export type Order = {
          * Field included by default.
          */
         returned_at?: unknown;
+        /**
+         * Field included by default.
+         */
+        sales_channel?: 'pos' | 'group_chat' | 'other' | unknown;
         /**
          * Field included by default.
          */
@@ -951,6 +1032,19 @@ export type OrderFilterId = {
     less_than?: string;
     less_than_or_equal?: string;
     not_eq?: string;
+};
+
+export type OrderFilterOrderKind = {
+    eq?: 'sale' | 'preorder';
+    greater_than?: 'sale' | 'preorder';
+    greater_than_or_equal?: 'sale' | 'preorder';
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: 'sale' | 'preorder';
+    less_than_or_equal?: 'sale' | 'preorder';
+    not_eq?: 'sale' | 'preorder';
 };
 
 export type StockMovementFilterReferenceId = {
@@ -1158,6 +1252,19 @@ export type CustomerFilterName = {
     not_eq?: string;
     string_ends_with?: string;
     string_starts_with?: string;
+};
+
+export type OrderFilterFulfillmentStatus = {
+    eq?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+    greater_than?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+    greater_than_or_equal?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+    in?: Array<string>;
+    is_distinct_from?: string;
+    is_nil?: boolean;
+    is_not_distinct_from?: string;
+    less_than?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+    less_than_or_equal?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
+    not_eq?: 'not_applicable' | 'awaiting_stock' | 'ready' | 'fulfilled' | 'cancelled';
 };
 
 export type OrderLineItemFilterQuantity = {
@@ -1909,6 +2016,10 @@ export type PostApiOrdersData = {
         data: {
             attributes?: {
                 customer_id?: string | unknown;
+                expected_at?: unknown;
+                external_reference?: string | unknown;
+                order_kind?: 'sale' | 'preorder' | unknown;
+                sales_channel?: 'pos' | 'group_chat' | 'other' | unknown;
             };
             relationships?: {
                 [key: string]: never;
@@ -2008,6 +2119,68 @@ export type GetApiOrdersByIdResponses = {
 
 export type GetApiOrdersByIdResponse = GetApiOrdersByIdResponses[keyof GetApiOrdersByIdResponses];
 
+export type PatchApiOrdersByIdAllocateStockData = {
+    /**
+     * Request body for the /orders/:id/allocate-stock operation on order resource
+     */
+    body?: {
+        data: {
+            attributes?: {
+                [key: string]: never;
+            };
+            id: string;
+            relationships?: {
+                [key: string]: never;
+            };
+            type?: 'order';
+        };
+    };
+    path: {
+        id: string;
+    };
+    query?: {
+        /**
+         * Relationship paths to include in the response
+         */
+        include?: string;
+        /**
+         * Limits the response fields to only those listed for each type
+         */
+        fields?: {
+            /**
+             * Comma separated field names for order
+             */
+            order?: string;
+            [key: string]: unknown;
+        };
+    };
+    url: '/api/orders/{id}/allocate-stock';
+};
+
+export type PatchApiOrdersByIdAllocateStockErrors = {
+    /**
+     * General Error
+     */
+    default: Errors;
+};
+
+export type PatchApiOrdersByIdAllocateStockError = PatchApiOrdersByIdAllocateStockErrors[keyof PatchApiOrdersByIdAllocateStockErrors];
+
+export type PatchApiOrdersByIdAllocateStockResponses = {
+    /**
+     * Success
+     */
+    200: {
+        data?: Order;
+        included?: Array<Customer | Payment | OrderLineItem | ProductVariant>;
+        meta?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PatchApiOrdersByIdAllocateStockResponse = PatchApiOrdersByIdAllocateStockResponses[keyof PatchApiOrdersByIdAllocateStockResponses];
+
 export type PatchApiOrdersByIdCancelData = {
     /**
      * Request body for the /orders/:id/cancel operation on order resource
@@ -2069,6 +2242,68 @@ export type PatchApiOrdersByIdCancelResponses = {
 };
 
 export type PatchApiOrdersByIdCancelResponse = PatchApiOrdersByIdCancelResponses[keyof PatchApiOrdersByIdCancelResponses];
+
+export type PatchApiOrdersByIdConfirmPreorderData = {
+    /**
+     * Request body for the /orders/:id/confirm-preorder operation on order resource
+     */
+    body?: {
+        data: {
+            attributes?: {
+                [key: string]: never;
+            };
+            id: string;
+            relationships?: {
+                [key: string]: never;
+            };
+            type?: 'order';
+        };
+    };
+    path: {
+        id: string;
+    };
+    query?: {
+        /**
+         * Relationship paths to include in the response
+         */
+        include?: string;
+        /**
+         * Limits the response fields to only those listed for each type
+         */
+        fields?: {
+            /**
+             * Comma separated field names for order
+             */
+            order?: string;
+            [key: string]: unknown;
+        };
+    };
+    url: '/api/orders/{id}/confirm-preorder';
+};
+
+export type PatchApiOrdersByIdConfirmPreorderErrors = {
+    /**
+     * General Error
+     */
+    default: Errors;
+};
+
+export type PatchApiOrdersByIdConfirmPreorderError = PatchApiOrdersByIdConfirmPreorderErrors[keyof PatchApiOrdersByIdConfirmPreorderErrors];
+
+export type PatchApiOrdersByIdConfirmPreorderResponses = {
+    /**
+     * Success
+     */
+    200: {
+        data?: Order;
+        included?: Array<Customer | Payment | OrderLineItem | ProductVariant>;
+        meta?: {
+            [key: string]: unknown;
+        };
+    };
+};
+
+export type PatchApiOrdersByIdConfirmPreorderResponse = PatchApiOrdersByIdConfirmPreorderResponses[keyof PatchApiOrdersByIdConfirmPreorderResponses];
 
 export type PatchApiOrdersByIdDiscountData = {
     /**

@@ -16,6 +16,8 @@ export type OrderDetail = {
   };
   discountCents: number;
   fulfilledAt?: string;
+  fulfillmentStatus:
+    "awaiting_stock" | "cancelled" | "fulfilled" | "not_applicable" | "ready";
   id: string;
   items: {
     color: string;
@@ -27,6 +29,7 @@ export type OrderDetail = {
     unitPriceCents: number;
   }[];
   number: number;
+  orderKind: "preorder" | "sale";
   paymentState: "paid" | "partially_paid" | "unpaid";
   payments: {
     amountCents: number;
@@ -137,9 +140,11 @@ export function useOrderDetailQuery(orderId: string) {
         customer: { contact, name: customerName },
         discountCents: attributes.discount_cents,
         fulfilledAt: optionalString(attributes.fulfilled_at),
+        fulfillmentStatus: attributes.fulfillment_status,
         id: order.id,
         items,
         number: attributes.order_number,
+        orderKind: attributes.order_kind,
         paymentState:
           attributes.payment_state === "paid" ||
           attributes.payment_state === "partially_paid"

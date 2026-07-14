@@ -82,7 +82,10 @@ function normalizeVariants(
         priceCents: attributes.price_cents,
         size: attributes.size,
         sku: attributes.sku,
-        stock: attributes.quantity_on_hand,
+        stock: Math.max(
+          attributes.quantity_on_hand - attributes.reserved_quantity,
+          0,
+        ),
       },
     ];
   });
